@@ -170,7 +170,6 @@
         <button id="playOnlineBtn" class="mode-btn" type="button">Play Online</button>
       </div>
       <div id="modeMeta" class="mode-meta"></div>
-      <button id="startGameBtn" class="start-btn" type="button">Start a Game (AI)</button>
 
       <div class="camo-title">Tank Camo</div>
       <div class="camo-grid" id="camoGrid">
@@ -188,7 +187,7 @@
     <div class="wrap">
       <div class="top">
         <div><strong>Light Tanks</strong> - AI / Online</div>
-        <div id="status">Press Start a Game</div>
+        <div id="status">Press R to start</div>
         <div class="hint">WASD - move, Mouse - aim, LMB/Space - shoot, R - restart (AI)</div>
       </div>
       <canvas id="game" width="960" height="540" tabindex="0"></canvas>
@@ -200,7 +199,6 @@
     const ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("status");
     const modeMetaEl = document.getElementById("modeMeta");
-    const startBtn = document.getElementById("startGameBtn");
     const playAiBtn = document.getElementById("playAiBtn");
     const playOnlineBtn = document.getElementById("playOnlineBtn");
     const nicknameInput = document.getElementById("nickname");
@@ -242,7 +240,12 @@
     ];
 
     function createTank(x, y, camo, angle) {
-      return { x, y, w: 38, h: 26, angle, speed: 170, accel: 700, drag: 5.5, turnRate: 8.5, vx: 0, vy: 0, camo, hp: 3, fireCd: 0, aiTurn: 0 };
+      return {
+        x, y, w: 38, h: 26, angle, speed: 170, accel: 700, drag: 5.5, turnRate: 8.5, vx: 0, vy: 0, camo, hp: 3, fireCd: 0,
+        aiState: "approach",
+        aiDecisionTimer: 0,
+        aiStrafeDir: 1
+      };
     }
     function baseWalls() {
       return [
@@ -261,9 +264,8 @@
       mode = nextMode;
       playAiBtn.style.filter = mode === "ai" ? "brightness(1.1)" : "";
       playOnlineBtn.style.filter = mode === "online" ? "brightness(1.1)" : "";
-      startBtn.style.display = mode === "ai" ? "block" : "none";
       modeMetaEl.textContent = mode === "ai" ? "Local match against a bot." : `Server required: ${ONLINE_SERVER_URL}`;
-      statusEl.textContent = mode === "ai" ? "Press Start a Game" : "Press 'Play Online'";
+      statusEl.textContent = mode === "ai" ? "Press R to start" : "Press 'Play Online'";
     }
 
     function resetAiGame() {
@@ -353,24 +355,59 @@
     function updateEnemy(dt) {
       const toX = player.x - enemy.x;
       const toY = player.y - enemy.y;
-      enemy.angle = Math.atan2(toY, toX);
-      enemy.aiTurn -= dt;
-      let moveX = 0, moveY = 0;
       const dist = Math.hypot(toX, toY);
-      if (dist > 220) { moveX = Math.cos(enemy.angle); moveY = Math.sin(enemy.angle); }
-      else if (dist < 130) { moveX = -Math.cos(enemy.angle); moveY = -Math.sin(enemy.angle); }
-      else if (enemy.aiTurn <= 0) {
-        enemy.aiTurn = 0.7;
-        const side = Math.random() > 0.5 ? 1 : -1;
-        moveX = Math.cos(enemy.angle + side * Math.PI / 2);
-        moveY = Math.sin(enemy.angle + side * Math.PI / 2);
+
+      const desiredAngle = Math.atan2(toY, toX);
+      enemy.angle = approachAngle(enemy.angle, desiredAngle, enemy.turnRate * dt * 0.9);
+
+      // Re-evaluate behavior every short interval to avoid frame-by-frame twitching.
+      enemy.aiDecisionTimer -= dt;
+      if (enemy.aiDecisionTimer <= 0) {
+        if (dist > 300) enemy.aiState = "approach";
+        else if (dist < 135) enemy.aiState = "retreat";
+        else enemy.aiState = "fight";
+
+        enemy.aiDecisionTimer = 0.35 + Math.random() * 0.55;
+        if (Math.random() < 0.35) enemy.aiStrafeDir *= -1;
       }
-      const nx = enemy.x + moveX * enemy.speed * 0.75 * dt;
+
+      let moveX = 0;
+      let moveY = 0;
+      if (enemy.aiState === "approach") {
+        moveX = Math.cos(desiredAngle);
+        moveY = Math.sin(desiredAngle);
+      } else if (enemy.aiState === "retreat") {
+        moveX = -Math.cos(desiredAngle);
+        moveY = -Math.sin(desiredAngle);
+        if (Math.random() < 0.2) {
+          moveX += Math.cos(desiredAngle + enemy.aiStrafeDir * Math.PI / 2) * 0.45;
+          moveY += Math.sin(desiredAngle + enemy.aiStrafeDir * Math.PI / 2) * 0.45;
+        }
+      } else {
+        // fight: orbit and occasionally step in/out for less predictable movement
+        const orbitAngle = desiredAngle + enemy.aiStrafeDir * Math.PI / 2;
+        moveX = Math.cos(orbitAngle) * 0.85 + Math.cos(desiredAngle) * ((Math.random() - 0.5) * 0.55);
+        moveY = Math.sin(orbitAngle) * 0.85 + Math.sin(desiredAngle) * ((Math.random() - 0.5) * 0.55);
+      }
+
+      const mLen = Math.hypot(moveX, moveY) || 1;
+      moveX /= mLen;
+      moveY /= mLen;
+
+      const nx = enemy.x + moveX * enemy.speed * 0.78 * dt;
       const ny = enemy.y + moveY * enemy.speed * 0.75 * dt;
       if (canMoveTo(enemy, nx, enemy.y)) enemy.x = nx;
       if (canMoveTo(enemy, enemy.x, ny)) enemy.y = ny;
+
       enemy.fireCd = Math.max(0, enemy.fireCd - dt);
-      if (dist < 420 && Math.random() < 0.02 + dt * 0.8) shoot(enemy, "enemy");
+
+      // Fire only when roughly aimed at player.
+      const aimError = Math.abs(Math.atan2(Math.sin(desiredAngle - enemy.angle), Math.cos(desiredAngle - enemy.angle)));
+      const aimedEnough = aimError < 0.4;
+      const shootChance = enemy.aiState === "fight" ? 1.8 : 1.0;
+      if (dist < 430 && aimedEnough && Math.random() < shootChance * dt) {
+        shoot(enemy, "enemy");
+      }
     }
 
     function updateBullets(dt) {
@@ -508,10 +545,10 @@
         ctx.fillText(`AI HP: ${enemy.hp}`, world.w - 96, 24);
       }
 
-      if (mode === "ai" && !gameStarted) drawOverlay("Press Start a Game");
       if (mode === "ai" && gameOver) drawOverlay(winner, "Press R to restart");
-      if (mode === "online" && !gameStarted) drawOverlay("Online mode", "Waiting for player...");
-      if (mode === "online" && gameOver) drawOverlay(winner, "Press Play Online");
+      else if (mode === "ai" && !gameStarted) drawOverlay("Press R to start");
+      else if (mode === "online" && gameOver) drawOverlay(winner, "Press Play Online");
+      else if (mode === "online" && !gameStarted) drawOverlay("Online mode", "Waiting for player...");
       drawCrosshair();
     }
 
@@ -603,11 +640,10 @@
     });
     window.addEventListener("keyup", (e) => keys.delete(e.code));
 
-    startBtn.addEventListener("click", () => { setMode("ai"); startAiGame(); canvas.focus(); });
     playAiBtn.addEventListener("click", () => {
       if (onlineSocket) { onlineSocket.close(); onlineSocket = null; }
       setMode("ai");
-      enterWaitingState();
+      startAiGame();
       canvas.focus();
     });
     playOnlineBtn.addEventListener("click", () => { connectOnline(); canvas.focus(); });
