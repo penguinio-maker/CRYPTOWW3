@@ -1,6 +1,6 @@
 ﻿const { WebSocketServer } = require("ws");
 
-const PORT = 8080;
+const PORT = Number(process.env.PORT) || 3000;
 const TICK_MS = 33;
 
 const clients = { player0: null, player1: null };

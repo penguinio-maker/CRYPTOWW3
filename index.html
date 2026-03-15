@@ -223,6 +223,7 @@
     let myId = null;
     let lastSentInputAt = 0;
     let shootQueued = false;
+    const ONLINE_SERVER_URL = "https://tank-server.onrender.com";
 
     const CAMOS = {
       classic: { body: "#4f7f45", stripe: "#c2ab73", turret: "#365a32", barrel: "#1b2a18" },
@@ -261,7 +262,7 @@
       playAiBtn.style.filter = mode === "ai" ? "brightness(1.1)" : "";
       playOnlineBtn.style.filter = mode === "online" ? "brightness(1.1)" : "";
       startBtn.style.display = mode === "ai" ? "block" : "none";
-      modeMetaEl.textContent = mode === "ai" ? "Local match against a bot." : "Server required: ws://localhost:8080";
+      modeMetaEl.textContent = mode === "ai" ? "Local match against a bot." : `Server required: ${ONLINE_SERVER_URL}`;
       statusEl.textContent = mode === "ai" ? "Press Start a Game" : "Press 'Play Online'";
     }
 
@@ -539,8 +540,7 @@
       winner = "";
       if (onlineSocket) onlineSocket.close();
       modeMetaEl.textContent = "Connecting to server...";
-      const url = `ws://${location.hostname || "localhost"}:8080`;
-      onlineSocket = new WebSocket(url);
+      onlineSocket = new WebSocket(ONLINE_SERVER_URL);
 
       onlineSocket.onopen = () => {
         modeMetaEl.textContent = "Connected. Waiting for second player.";
