@@ -3,6 +3,16 @@ const { WebSocketServer } = require("ws");
 
 const PORT = Number(process.env.PORT) || 3000;
 const TICK_MS = 33;
+const totalRounds = 3;
+const roundTime = 60;
+
+const maxForwardSpeed = 190;
+const maxReverseSpeed = 115;
+const acceleration = 520;
+const braking = 780;
+const friction = 5.2;
+const turnSpeed = 3.4;
+const recoilStrength = 18;
 
 const clients = { player0: null, player1: null };
 const nicknames = { player0: "P1", player1: "P2" };
@@ -11,7 +21,12 @@ const inputs = {
   player1: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false }
 };
 
+const waitingRandom = [];
+const lobbies = new Map();
+let wss = null;
+
 let state = null;
+let matchState = null;
 
 function baseWalls() {
   return [
@@ -24,10 +39,24 @@ function baseWalls() {
 }
 
 function createTank(x, y, angle) {
-  return { x, y, w: 38, h: 26, angle, hp: 3, speed: 170, fireCd: 0 };
+  return { x, y, w: 38, h: 26, angle, hp: 3, driveSpeed: 0, angularVelocity: 0, fireCd: 0 };
 }
 
-function resetMatch() {
+function normalizeNickname(name, fallback) {
+  const clean = (typeof name === "string" ? name : "").trim() || fallback;
+  return clean.slice(0, 12);
+}
+
+function normalizeLobbyName(name, fallback) {
+  const clean = (typeof name === "string" ? name : "").trim() || fallback;
+  return clean.slice(0, 24);
+}
+
+function normalizeLobbyPassword(password) {
+  return (typeof password === "string" ? password : "").trim().slice(0, 24);
+}
+
+function resetArena() {
   state = {
     players: [createTank(120, 270, 0), createTank(840, 270, Math.PI)],
     walls: baseWalls(),
@@ -35,8 +64,34 @@ function resetMatch() {
   };
 }
 
-function bothConnected() {
-  return clients.player0 && clients.player1;
+function resetMatchState() {
+  matchState = {
+    totalRounds,
+    roundTime,
+    currentRound: 1,
+    roundTimeLeft: roundTime,
+    roundWinners: [],
+    roundEnded: false,
+    roundResult: "draw",
+    roundPauseLeft: 0,
+    matchEnded: false
+  };
+}
+
+function makePublicState() {
+  return {
+    ...state,
+    nicknames: [nicknames.player0, nicknames.player1],
+    match: {
+      totalRounds,
+      roundTime,
+      currentRound: matchState.currentRound,
+      roundTimeLeft: matchState.roundTimeLeft,
+      roundWinners: [...matchState.roundWinners],
+      roundEnded: matchState.roundEnded,
+      roundResult: matchState.roundResult
+    }
+  };
 }
 
 function send(ws, payload) {
@@ -49,14 +104,282 @@ function broadcast(payload) {
   send(clients.player1, payload);
 }
 
-function startIfReady() {
-  if (!bothConnected()) return;
-  resetMatch();
-  broadcast({ type: "start", state: { ...state, nicknames: [nicknames.player0, nicknames.player1] } });
+function bothConnected() {
+  return clients.player0 && clients.player1;
 }
 
-function queueNotice() {
-  broadcast({ type: "queue" });
+function arenaBusy() {
+  return !!clients.player0 || !!clients.player1;
+}
+
+function clearPlayerSlot(playerId) {
+  clients[playerId] = null;
+  nicknames[playerId] = playerId === "player0" ? "P1" : "P2";
+  inputs[playerId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
+}
+
+function removeFromRandomQueue(ws) {
+  const idx = waitingRandom.indexOf(ws);
+  if (idx >= 0) waitingRandom.splice(idx, 1);
+}
+
+function lobbyPublicView(lobby) {
+  return {
+    code: lobby.code,
+    lobbyName: lobby.lobbyName,
+    creatorNickname: lobby.hostNick,
+    joinedNickname: lobby.guestNick || "",
+    playerCount: lobby.guest ? 2 : 1,
+    hasPassword: !!lobby.password
+  };
+}
+
+function sendLobbyList(ws) {
+  if (!ws || ws.readyState !== 1) return;
+  const items = [];
+  for (const lobby of lobbies.values()) {
+    if (!lobby.host || lobby.host.readyState !== 1) continue;
+    items.push(lobbyPublicView(lobby));
+  }
+  send(ws, { type: "lobby_list", lobbies: items });
+}
+
+function broadcastLobbyList() {
+  if (!wss) return;
+  for (const client of wss.clients) sendLobbyList(client);
+}
+
+function sendLobbyState(ws) {
+  if (!ws || ws.readyState !== 1) return;
+  const code = ws._lobbyCode;
+  if (!code) {
+    send(ws, { type: "lobby_state", lobby: null });
+    return;
+  }
+
+  const lobby = lobbies.get(code);
+  if (!lobby || !lobby.host || lobby.host.readyState !== 1) {
+    ws._lobbyCode = null;
+    send(ws, { type: "lobby_state", lobby: null });
+    return;
+  }
+
+  send(ws, {
+    type: "lobby_state",
+    lobby: {
+      code: lobby.code,
+      lobbyName: lobby.lobbyName,
+      creatorNickname: lobby.hostNick,
+      joinedNickname: lobby.guestNick || "",
+      isCreator: lobby.host === ws,
+      canStart: lobby.host === ws && !!lobby.guest,
+      hasPassword: !!lobby.password
+    }
+  });
+}
+
+function refreshLobbyState(lobby) {
+  if (!lobby) return;
+  sendLobbyState(lobby.host);
+  if (lobby.guest) sendLobbyState(lobby.guest);
+}
+
+function removeFromLobbies(ws, notify = true) {
+  for (const [code, lobby] of lobbies.entries()) {
+    if (lobby.host === ws) {
+      if (lobby.guest) {
+        lobby.guest._lobbyCode = null;
+        if (notify) send(lobby.guest, { type: "error", message: "Lobby closed by host" });
+        sendLobbyState(lobby.guest);
+      }
+      lobbies.delete(code);
+      ws._lobbyCode = null;
+      sendLobbyState(ws);
+      broadcastLobbyList();
+      return true;
+    }
+    if (lobby.guest === ws) {
+      lobby.guest = null;
+      lobby.guestNick = "";
+      ws._lobbyCode = null;
+      if (notify) send(lobby.host, { type: "lobby_waiting", code, message: "Waiting for player..." });
+      refreshLobbyState(lobby);
+      sendLobbyState(ws);
+      broadcastLobbyList();
+      return true;
+    }
+  }
+  return false;
+}
+
+function leavePending(ws, notify = true) {
+  removeFromRandomQueue(ws);
+  removeFromLobbies(ws, notify);
+}
+
+function generateLobbyCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  for (let attempt = 0; attempt < 20; attempt++) {
+    let code = "";
+    for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    if (!lobbies.has(code)) return code;
+  }
+  return `${Date.now().toString(36).slice(-5).toUpperCase()}`;
+}
+
+function startMatch(ws0, ws1, nick0, nick1) {
+  if (arenaBusy()) return false;
+  clients.player0 = ws0;
+  clients.player1 = ws1;
+  nicknames.player0 = nick0;
+  nicknames.player1 = nick1;
+
+  ws0._playerId = "player0";
+  ws1._playerId = "player1";
+  ws0._closingForMatchEnd = false;
+  ws1._closingForMatchEnd = false;
+
+  resetArena();
+  resetMatchState();
+  send(ws0, { type: "welcome", playerId: "player0" });
+  send(ws1, { type: "welcome", playerId: "player1" });
+  broadcast({ type: "start", state: makePublicState() });
+  return true;
+}
+
+function tryStartPendingMatch() {
+  if (arenaBusy()) return;
+
+  while (waitingRandom.length > 0 && waitingRandom[0].readyState !== 1) waitingRandom.shift();
+  while (waitingRandom.length > 1 && waitingRandom[1].readyState !== 1) waitingRandom.splice(1, 1);
+
+  if (waitingRandom.length >= 2) {
+    const a = waitingRandom.shift();
+    const b = waitingRandom.shift();
+    startMatch(a, b, normalizeNickname(a._nick, "P1"), normalizeNickname(b._nick, "P2"));
+  }
+}
+
+function queueRandom(ws, nickname) {
+  ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
+  leavePending(ws, false);
+  if (!waitingRandom.includes(ws)) waitingRandom.push(ws);
+  send(ws, { type: "queue", message: "Searching for player..." });
+  tryStartPendingMatch();
+}
+
+function createLobby(ws, nickname, lobbyNameRaw, passwordRaw) {
+  ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
+  const lobbyNameInput = (typeof lobbyNameRaw === "string" ? lobbyNameRaw : "").trim();
+  if (!lobbyNameInput) {
+    send(ws, { type: "error", message: "Lobby name is required." });
+    return;
+  }
+  leavePending(ws, false);
+  const code = generateLobbyCode();
+  const lobbyName = normalizeLobbyName(lobbyNameInput, `${ws._nick}'s Lobby`);
+  const password = normalizeLobbyPassword(passwordRaw);
+  lobbies.set(code, { code, lobbyName, password, host: ws, hostNick: ws._nick, guest: null, guestNick: "" });
+  ws._lobbyCode = code;
+  send(ws, { type: "lobby_created", code, lobbyName, hasPassword: !!password });
+  send(ws, { type: "lobby_waiting", code, message: "Waiting for player..." });
+  sendLobbyState(ws);
+  broadcastLobbyList();
+}
+
+function joinLobby(ws, codeRaw, nickname, passwordRaw) {
+  const code = String(codeRaw || "").trim().toUpperCase();
+  if (!code) {
+    send(ws, { type: "error", message: "Enter lobby code" });
+    return;
+  }
+
+  const lobby = lobbies.get(code);
+  if (!lobby || !lobby.host || lobby.host.readyState !== 1) {
+    send(ws, { type: "error", message: "Lobby not found" });
+    return;
+  }
+  if (lobby.guest) {
+    send(ws, { type: "error", message: "Lobby is full" });
+    return;
+  }
+  if (lobby.host === ws) {
+    send(ws, { type: "error", message: "You are already host of this lobby" });
+    return;
+  }
+  const password = normalizeLobbyPassword(passwordRaw);
+  if (lobby.password && password !== lobby.password) {
+    send(ws, {
+      type: "join_password_required",
+      code,
+      lobbyName: lobby.lobbyName,
+      message: password ? "Wrong password. Try again." : "Enter password"
+    });
+    return;
+  }
+
+  ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
+  leavePending(ws, false);
+
+  lobby.guest = ws;
+  lobby.guestNick = ws._nick;
+  ws._lobbyCode = code;
+
+  send(ws, { type: "lobby_waiting", code, message: "Joined lobby. Waiting for start..." });
+  send(lobby.host, { type: "lobby_waiting", code, message: "Player joined. Creator can start game." });
+  refreshLobbyState(lobby);
+  broadcastLobbyList();
+}
+
+function startLobbyGame(ws) {
+  const code = ws._lobbyCode;
+  if (!code) {
+    send(ws, { type: "error", message: "You are not in a lobby" });
+    return;
+  }
+
+  const lobby = lobbies.get(code);
+  if (!lobby || !lobby.host || lobby.host.readyState !== 1) {
+    ws._lobbyCode = null;
+    send(ws, { type: "error", message: "Lobby not found" });
+    sendLobbyState(ws);
+    broadcastLobbyList();
+    return;
+  }
+
+  if (lobby.host !== ws) {
+    send(ws, { type: "error", message: "Only creator can start the game" });
+    return;
+  }
+  if (!lobby.guest || lobby.guest.readyState !== 1) {
+    send(ws, { type: "error", message: "Waiting for second player" });
+    refreshLobbyState(lobby);
+    return;
+  }
+  if (arenaBusy()) {
+    send(ws, { type: "error", message: "Arena busy. Try again." });
+    return;
+  }
+
+  lobbies.delete(code);
+  lobby.host._lobbyCode = null;
+  lobby.guest._lobbyCode = null;
+  broadcastLobbyList();
+  startMatch(lobby.host, lobby.guest, lobby.hostNick, lobby.guestNick);
+}
+
+function cancelQueue(ws) {
+  const wasInRandom = waitingRandom.includes(ws);
+  const wasInLobby = removeFromLobbies(ws, true);
+  removeFromRandomQueue(ws);
+
+  if (wasInRandom || wasInLobby) {
+    send(ws, { type: "cancelled", message: "Search cancelled" });
+  } else {
+    send(ws, { type: "cancelled", message: "Nothing to cancel" });
+  }
+  sendLobbyState(ws);
+  sendLobbyList(ws);
 }
 
 function rectsOverlap(a, b) {
@@ -74,30 +397,76 @@ function canMoveTo(tank, nx, ny) {
   return true;
 }
 
-function updateTank(id, dt) {
-  const idx = id === "player0" ? 0 : 1;
-  const tank = state.players[idx];
-  const inp = inputs[id];
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
 
-  let dx = 0;
-  let dy = 0;
-  if (inp.up) dy -= 1;
-  if (inp.down) dy += 1;
-  if (inp.left) dx -= 1;
-  if (inp.right) dx += 1;
+function normalizeAngleDiff(from, to) {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
 
-  if (dx || dy) {
-    const len = Math.hypot(dx, dy);
-    dx /= len;
-    dy /= len;
-    const nx = tank.x + dx * tank.speed * dt;
-    const ny = tank.y + dy * tank.speed * dt;
-    if (canMoveTo(tank, nx, tank.y)) tank.x = nx;
-    if (canMoveTo(tank, tank.x, ny)) tank.y = ny;
+function moveTankWithSlide(tank, dt) {
+  const vx = Math.cos(tank.angle) * tank.driveSpeed;
+  const vy = Math.sin(tank.angle) * tank.driveSpeed;
+  const nx = tank.x + vx * dt;
+  const ny = tank.y + vy * dt;
+
+  if (canMoveTo(tank, nx, ny)) {
+    tank.x = nx;
+    tank.y = ny;
+    return;
   }
 
-  tank.angle = Math.atan2(inp.aimY - tank.y, inp.aimX - tank.x);
+  let moved = false;
+  if (canMoveTo(tank, nx, tank.y)) {
+    tank.x = nx;
+    moved = true;
+  }
+  if (canMoveTo(tank, tank.x, ny)) {
+    tank.y = ny;
+    moved = true;
+  }
+
+  if (moved) tank.driveSpeed *= 0.76;
+  else tank.driveSpeed *= 0.2;
+}
+
+function updateTankDrive(tank, dt, throttleInput, turnInput) {
+  const targetSpeed = throttleInput >= 0 ? throttleInput * maxForwardSpeed : throttleInput * maxReverseSpeed;
+  const changingDirection = Math.sign(targetSpeed) !== Math.sign(tank.driveSpeed) && Math.abs(tank.driveSpeed) > 4 && Math.abs(targetSpeed) > 0;
+  const accelRate = changingDirection ? braking : acceleration;
+
+  if (Math.abs(targetSpeed) > 0.01) {
+    tank.driveSpeed += clamp(targetSpeed - tank.driveSpeed, -accelRate * dt, accelRate * dt);
+  } else {
+    const stopMul = Math.exp(-friction * dt);
+    tank.driveSpeed *= stopMul;
+    if (Math.abs(tank.driveSpeed) < 1.5) tank.driveSpeed = 0;
+  }
+
+  const speedRatio = Math.min(Math.abs(tank.driveSpeed) / maxForwardSpeed, 1);
+  const turnGrip = 1 - speedRatio * 0.4;
+  const targetAngular = turnInput * turnSpeed * turnGrip;
+  tank.angularVelocity += clamp(targetAngular - tank.angularVelocity, -14 * dt, 14 * dt);
+  tank.angularVelocity *= Math.exp(-7 * dt);
+  tank.angle += tank.angularVelocity * dt;
+
+  moveTankWithSlide(tank, dt);
   tank.fireCd = Math.max(0, tank.fireCd - dt);
+}
+
+function updateTank(playerId, dt) {
+  const idx = playerId === "player0" ? 0 : 1;
+  const tank = state.players[idx];
+  const inp = inputs[playerId];
+
+  const throttleInput = (inp.up ? 1 : 0) + (inp.down ? -1 : 0);
+  const turnInput = (inp.right ? 1 : 0) + (inp.left ? -1 : 0);
+  updateTankDrive(tank, dt, throttleInput, turnInput);
+
+  const aimAngle = Math.atan2(inp.aimY - tank.y, inp.aimX - tank.x);
+  const align = normalizeAngleDiff(tank.angle, aimAngle);
+  tank.angularVelocity += clamp(align * 3.1, -3.5, 3.5) * dt;
 
   if (inp.shoot && tank.fireCd <= 0) {
     tank.fireCd = 0.45;
@@ -107,24 +476,62 @@ function updateTank(id, dt) {
       vx: Math.cos(tank.angle) * 380,
       vy: Math.sin(tank.angle) * 380,
       r: 4,
-      owner: id
+      owner: playerId
     });
+    tank.driveSpeed -= recoilStrength;
   }
 
-  inputs[id].shoot = false;
+  inputs[playerId].shoot = false;
 }
 
-function endMatch(winnerId) {
-  broadcast({ type: "end", winnerId });
-  // Stop auto-rematch: finish the current match and require explicit rejoin.
+function decideRoundWinnerByHp() {
+  const p0 = state.players[0].hp;
+  const p1 = state.players[1].hp;
+  if (p0 > p1) return "player0";
+  if (p1 > p0) return "player1";
+  return "draw";
+}
+
+function finishRound(winnerId) {
+  if (!matchState || matchState.roundEnded || matchState.matchEnded) return;
+  matchState.roundEnded = true;
+  matchState.roundResult = winnerId;
+  matchState.roundWinners.push(winnerId);
+  matchState.roundPauseLeft = 1.05;
+}
+
+function finishMatch() {
+  if (!matchState || matchState.matchEnded) return;
+  matchState.matchEnded = true;
+
+  const p0Wins = matchState.roundWinners.filter((x) => x === "player0").length;
+  const p1Wins = matchState.roundWinners.filter((x) => x === "player1").length;
+  const finalWinner = p0Wins === p1Wins ? "draw" : p0Wins > p1Wins ? "player0" : "player1";
+
+  broadcast({ type: "end", winnerId: finalWinner, roundWinners: [...matchState.roundWinners] });
+
   const closingSockets = [clients.player0, clients.player1].filter(Boolean);
   for (const ws of closingSockets) ws._closingForMatchEnd = true;
   setTimeout(() => {
     for (const ws of closingSockets) {
       if (ws.readyState === 1) ws.close(1000, "match-ended");
     }
-    resetMatch();
-  }, 120);
+  }, 150);
+}
+
+function nextRoundOrFinish() {
+  if (!matchState || !matchState.roundEnded || matchState.matchEnded) return;
+  if (matchState.currentRound >= totalRounds) {
+    finishMatch();
+    return;
+  }
+
+  matchState.currentRound += 1;
+  matchState.roundTimeLeft = roundTime;
+  matchState.roundEnded = false;
+  matchState.roundResult = "draw";
+  matchState.roundPauseLeft = 0;
+  resetArena();
 }
 
 function updateBullets(dt) {
@@ -161,7 +568,7 @@ function updateBullets(dt) {
         state.bullets.splice(i, 1);
         if (tank.hp <= 0) {
           const winnerId = p === 0 ? "player1" : "player0";
-          endMatch(winnerId);
+          finishRound(winnerId);
         }
         break;
       }
@@ -182,10 +589,16 @@ const httpServer = http.createServer((req, res) => {
   res.end("Not found");
 });
 
-const wss = new WebSocketServer({ server: httpServer });
+wss = new WebSocketServer({ server: httpServer });
 
 wss.on("connection", (ws) => {
-  let myId = null;
+  ws._nick = "PLAYER";
+  ws._lobbyCode = null;
+  ws._playerId = null;
+  ws._closingForMatchEnd = false;
+
+  sendLobbyList(ws);
+  sendLobbyState(ws);
 
   ws.on("message", (raw) => {
     let msg;
@@ -195,28 +608,39 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    if (msg.type === "join" && !myId) {
-      if (!clients.player0) myId = "player0";
-      else if (!clients.player1) myId = "player1";
-      else {
-        ws.close();
-        return;
-      }
-
-      clients[myId] = ws;
-      if (typeof msg.nickname === "string" && msg.nickname.trim()) {
-        nicknames[myId] = msg.nickname.trim().slice(0, 12);
-      }
-
-      send(ws, { type: "welcome", playerId: myId });
-
-      if (bothConnected()) startIfReady();
-      else queueNotice();
+    if (msg.type === "join_random" || msg.type === "join") {
+      queueRandom(ws, msg.nickname);
       return;
     }
 
-    if (msg.type === "input" && myId) {
-      inputs[myId] = {
+    if (msg.type === "create_lobby") {
+      createLobby(ws, msg.nickname, msg.lobbyName, msg.password);
+      return;
+    }
+
+    if (msg.type === "list_lobbies") {
+      sendLobbyList(ws);
+      sendLobbyState(ws);
+      return;
+    }
+
+    if (msg.type === "join_lobby") {
+      joinLobby(ws, msg.code, msg.nickname, msg.password);
+      return;
+    }
+
+    if (msg.type === "start_lobby_game") {
+      startLobbyGame(ws);
+      return;
+    }
+
+    if (msg.type === "cancel_queue") {
+      cancelQueue(ws);
+      return;
+    }
+
+    if (msg.type === "input" && ws._playerId) {
+      inputs[ws._playerId] = {
         up: !!msg.up,
         down: !!msg.down,
         left: !!msg.left,
@@ -229,22 +653,54 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    if (!myId) return;
-    clients[myId] = null;
-    if (myId === "player0") nicknames.player0 = "P1";
-    if (myId === "player1") nicknames.player1 = "P2";
-    inputs[myId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
-    if (!ws._closingForMatchEnd) queueNotice();
+    leavePending(ws, true);
+
+    if (ws._playerId === "player0" || ws._playerId === "player1") {
+      const me = ws._playerId;
+      const other = me === "player0" ? "player1" : "player0";
+      const otherWs = clients[other];
+      clearPlayerSlot(me);
+
+      if (!ws._closingForMatchEnd && otherWs && otherWs.readyState === 1) {
+        send(otherWs, { type: "error", message: "Opponent disconnected" });
+        otherWs._closingForMatchEnd = true;
+        otherWs.close(1000, "opponent-disconnected");
+      }
+
+      if (!clients.player0 && !clients.player1) {
+        resetArena();
+        resetMatchState();
+        tryStartPendingMatch();
+      }
+    }
   });
 });
 
-resetMatch();
+resetArena();
+resetMatchState();
 setInterval(() => {
   if (!bothConnected()) return;
-  updateTank("player0", TICK_MS / 1000);
-  updateTank("player1", TICK_MS / 1000);
-  updateBullets(TICK_MS / 1000);
-  broadcast({ type: "state", state: { ...state, nicknames: [nicknames.player0, nicknames.player1] } });
+
+  const dt = TICK_MS / 1000;
+  if (!matchState.matchEnded) {
+    if (!matchState.roundEnded) {
+      updateTank("player0", dt);
+      updateTank("player1", dt);
+      updateBullets(dt);
+
+      matchState.roundTimeLeft = Math.max(0, matchState.roundTimeLeft - dt);
+      if (matchState.roundTimeLeft <= 0) {
+        finishRound(decideRoundWinnerByHp());
+      }
+    } else {
+      matchState.roundPauseLeft -= dt;
+      if (matchState.roundPauseLeft <= 0) {
+        nextRoundOrFinish();
+      }
+    }
+  }
+
+  broadcast({ type: "state", state: makePublicState() });
 }, TICK_MS);
 
 httpServer.listen(PORT, () => {

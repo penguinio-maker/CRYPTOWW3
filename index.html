@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,13 +21,232 @@
       font-family: "Segoe UI", Tahoma, sans-serif;
       padding: 12px;
     }
-    .app {
-      width: min(1240px, 100%);
+    .hidden { display: none !important; }
+    .main-screen {
+      width: min(980px, 100%);
       margin: 0 auto;
+      min-height: calc(100vh - 24px);
       display: grid;
-      grid-template-columns: 405px 1fr;
-      gap: 12px;
-      align-items: start;
+      place-items: center;
+    }
+    .main-card {
+      width: min(560px, 100%);
+      background: color-mix(in srgb, #162635 90%, black);
+      border: 1px solid #2f4b62;
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      text-align: center;
+    }
+    .main-title {
+      margin: 0 0 8px;
+      font-family: "Courier New", monospace;
+      font-size: clamp(30px, 5vw, 44px);
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #e8f2ff;
+      text-shadow: 2px 2px 0 #1d5878;
+      text-transform: uppercase;
+    }
+    .main-sub {
+      margin: 0 0 16px;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .main-actions {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .lobbies-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+    }
+    .lobbies-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 10, 16, 0.45);
+    }
+    .lobbies-window {
+      position: relative;
+      width: min(64vw, 860px);
+      height: min(64vh, 560px);
+      min-width: 520px;
+      min-height: 360px;
+      background: color-mix(in srgb, #162635 92%, black);
+      border: 1px solid #3c5e78;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr;
+      gap: 10px;
+    }
+    .lobbies-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .lobbies-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+    }
+    .lobbies-close {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #6791ad;
+      border-radius: 8px;
+      background: #1f3647;
+      color: #e8f2ff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .lobbies-actions {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .lobby-input {
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid #4f7088;
+      background: #0e1c28;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 14px;
+      outline: none;
+      text-transform: uppercase;
+    }
+    .lobby-meta {
+      min-height: 18px;
+      font-size: 12px;
+      color: #b9d8ea;
+      text-align: left;
+    }
+    .my-lobby-card {
+      border: 1px solid #395c74;
+      background: rgba(11, 24, 37, 0.7);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: left;
+    }
+    .lobby-list {
+      border: 1px solid #2f4b62;
+      border-radius: 10px;
+      background: rgba(6, 14, 22, 0.45);
+      padding: 8px;
+      overflow: auto;
+    }
+    .lobby-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 10px;
+      border: 1px solid #2f4b62;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: rgba(18, 33, 46, 0.55);
+      text-align: left;
+    }
+    .lobby-item:last-child { margin-bottom: 0; }
+    .lobby-empty {
+      padding: 18px;
+      border: 1px dashed #4b667a;
+      border-radius: 8px;
+      text-align: center;
+      color: #b9d8ea;
+    }
+    .lobby-form-layer {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 13, 20, 0.6);
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      z-index: 3;
+      padding: 16px;
+    }
+    .lobby-form-card {
+      width: min(460px, 100%);
+      background: #112131;
+      border: 1px solid #3c5e78;
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      text-align: left;
+    }
+    .lobby-form-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .lobby-form-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #cfe6f5;
+    }
+    .lobby-help {
+      font-size: 12px;
+      color: #b9d8ea;
+      line-height: 1.35;
+    }
+    .lobby-error {
+      min-height: 14px;
+      font-size: 12px;
+      color: #ff6b6b;
+      line-height: 1.2;
+    }
+    .lobby-form-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .secondary-btn {
+      height: 36px;
+      border: 1px solid #6f8ba0;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #3a5568, #253947);
+      color: #e8f2ff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .main-action-btn {
+      height: 42px;
+      border: 1px solid #5cc8ff;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #52bdf3, #2f95c8);
+      color: #e8f2ff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .main-form {
+      text-align: left;
+      margin-bottom: 12px;
+    }
+    .main-meta {
+      min-height: 20px;
+      font-size: 12px;
+      color: #b9d8ea;
+      margin-bottom: 10px;
+    }
+    .app {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      display: block;
     }
     .menu {
       background: color-mix(in srgb, #162635 90%, black);
@@ -144,6 +363,30 @@
       border-bottom: 1px solid #2f4b62;
     }
     .hint { opacity: 0.9; }
+    .back-btn {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid #5cc8ff;
+      border-radius: 7px;
+      background: linear-gradient(180deg, #52bdf3, #2f95c8);
+      color: #e8f2ff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .cancel-btn {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid #7aa4c0;
+      border-radius: 7px;
+      background: linear-gradient(180deg, #3c6884, #27485e);
+      color: #e8f2ff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
     canvas {
       width: 100%;
       aspect-ratio: 16 / 9;
@@ -157,38 +400,90 @@
   </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="menu">
-      <h1 class="game-name">Crypto WW3</h1>
-      <label class="nick-label" for="nickname">Nickname</label>
-      <div class="nick-field">
-        <input id="nickname" class="nick-input" type="text" maxlength="18" placeholder="Enter nickname" />
-        <div class="nick-prompt">Enter nickname<span class="cursor">|</span></div>
+  <section id="mainMenu" class="main-screen">
+    <div class="main-card">
+      <h1 class="main-title">Crypto WW3</h1>
+      <p class="main-sub">Choose a mode to start the battle.</p>
+      <div class="main-form">
+        <label class="nick-label" for="nickname">Nickname</label>
+        <div class="nick-field">
+          <input id="nickname" class="nick-input" type="text" maxlength="18" placeholder="Enter nickname" />
+          <div class="nick-prompt">Enter nickname<span class="cursor">|</span></div>
+        </div>
       </div>
-      <div class="mode-row">
-        <button id="playAiBtn" class="mode-btn" type="button">Play vs AI</button>
-        <button id="playOnlineBtn" class="mode-btn" type="button">Play Online</button>
+      <div class="main-actions">
+        <button id="menuPlayAiBtn" class="main-action-btn" type="button">Play vs AI</button>
+        <button id="menuPlayOnlineRandomBtn" class="main-action-btn" type="button">Play Online 1v1 (Random)</button>
+        <button id="menuOpenLobbiesBtn" class="main-action-btn" type="button">Lobbies</button>
       </div>
-      <div id="modeMeta" class="mode-meta"></div>
+      <div id="modeMeta" class="main-meta"></div>
+      <div class="main-form">
+        <div class="camo-title">Tank Camo</div>
+        <div class="camo-grid" id="camoGrid">
+          <button class="camo-btn" data-camo="classic" aria-pressed="true" style="--pattern: repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px);"></button>
+          <button class="camo-btn" data-camo="obsidian" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #1c232b 0 8px, #9e8553 8px 16px, #2f3740 16px 24px);"></button>
+          <button class="camo-btn" data-camo="arctic" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #d4e2ec 0 8px, #6d8293 8px 16px, #f6fafc 16px 24px);"></button>
+          <button class="camo-btn" data-camo="royal" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #17406d 0 8px, #66b8ff 8px 16px, #102844 16px 24px);"></button>
+          <button class="camo-btn" data-camo="crimson" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #612426 0 8px, #e08973 8px 16px, #2b1011 16px 24px);"></button>
+          <button class="camo-btn" data-camo="emerald" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #155747 0 8px, #8ad3a9 8px 16px, #0b3228 16px 24px);"></button>
+          <button class="camo-btn" data-camo="violet" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #3d2b70 0 8px, #cc9bff 8px 16px, #1f1536 16px 24px);"></button>
+          <button class="camo-btn" data-camo="sunset" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #7a4311 0 8px, #ffc870 8px 16px, #3b220c 16px 24px);"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div id="lobbiesModal" class="lobbies-modal hidden">
+    <div id="lobbiesBackdrop" class="lobbies-backdrop"></div>
+    <div class="lobbies-window">
+      <div class="lobbies-head">
+        <h2 class="lobbies-title">Lobbies</h2>
+        <button id="lobbiesCloseBtn" class="lobbies-close" type="button">X</button>
+      </div>
+      <div class="lobbies-actions">
+        <button id="menuCreateLobbyBtn" class="main-action-btn" type="button">Create Lobby</button>
+        <input id="menuJoinLobbyInput" class="lobby-input" type="text" maxlength="8" placeholder="Lobby code" />
+        <button id="menuJoinLobbyBtn" class="main-action-btn" type="button">Join Lobby</button>
+      </div>
+      <div id="lobbyMeta" class="lobby-meta"></div>
+      <div id="myLobbyCard" class="my-lobby-card hidden"></div>
+      <div id="lobbiesList" class="lobby-list"></div>
+      <div id="createLobbyFormLayer" class="lobby-form-layer hidden">
+        <div class="lobby-form-card">
+          <h3 class="lobby-form-title">Create Lobby</h3>
+          <label class="lobby-form-label" for="createLobbyNameInput">Lobby Name</label>
+          <input id="createLobbyNameInput" class="lobby-input" type="text" maxlength="24" placeholder="Enter lobby name" />
+          <div id="createLobbyNameError" class="lobby-error"></div>
+          <label class="lobby-form-label" for="createLobbyPasswordInput">Password (optional)</label>
+          <input id="createLobbyPasswordInput" class="lobby-input" type="password" maxlength="24" placeholder="Enter password (optional)" />
+          <div class="lobby-help">Password is optional. Use it only if you want to make the lobby private.</div>
+          <div class="lobby-form-actions">
+            <button id="createLobbyCancelBtn" class="secondary-btn" type="button">Cancel</button>
+            <button id="createLobbySubmitBtn" class="main-action-btn" type="button" style="height:36px;width:112px;">Create</button>
+          </div>
+        </div>
+      </div>
+      <div id="joinPasswordFormLayer" class="lobby-form-layer hidden">
+        <div class="lobby-form-card">
+          <h3 id="joinPasswordTitle" class="lobby-form-title">Enter password</h3>
+          <label class="lobby-form-label" for="joinPasswordInput">Enter password</label>
+          <input id="joinPasswordInput" class="lobby-input" type="password" maxlength="24" placeholder="Password" />
+          <div class="lobby-form-actions">
+            <button id="joinPasswordCancelBtn" class="secondary-btn" type="button">Cancel</button>
+            <button id="joinPasswordSubmitBtn" class="main-action-btn" type="button" style="height:36px;width:112px;">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <div class="camo-title">Tank Camo</div>
-      <div class="camo-grid" id="camoGrid">
-        <button class="camo-btn" data-camo="classic" aria-pressed="true" style="--pattern: repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px);"></button>
-        <button class="camo-btn" data-camo="obsidian" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #1c232b 0 8px, #9e8553 8px 16px, #2f3740 16px 24px);"></button>
-        <button class="camo-btn" data-camo="arctic" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #d4e2ec 0 8px, #6d8293 8px 16px, #f6fafc 16px 24px);"></button>
-        <button class="camo-btn" data-camo="royal" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #17406d 0 8px, #66b8ff 8px 16px, #102844 16px 24px);"></button>
-        <button class="camo-btn" data-camo="crimson" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #612426 0 8px, #e08973 8px 16px, #2b1011 16px 24px);"></button>
-        <button class="camo-btn" data-camo="emerald" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #155747 0 8px, #8ad3a9 8px 16px, #0b3228 16px 24px);"></button>
-        <button class="camo-btn" data-camo="violet" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #3d2b70 0 8px, #cc9bff 8px 16px, #1f1536 16px 24px);"></button>
-        <button class="camo-btn" data-camo="sunset" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #7a4311 0 8px, #ffc870 8px 16px, #3b220c 16px 24px);"></button>
-      </div>
-    </aside>
-
+  <div id="gameApp" class="app hidden">
     <div class="wrap">
       <div class="top">
         <div><strong>Light Tanks</strong> - AI / Online</div>
         <div id="status">Press R to start</div>
         <div class="hint">WASD - move, Mouse - aim, LMB/Space - shoot, R - restart (AI)</div>
+        <button id="cancelSearchBtn" class="cancel-btn hidden" type="button">Cancel Search</button>
+        <button id="backToMenuBtn" class="back-btn" type="button">Main Menu</button>
       </div>
       <canvas id="game" width="960" height="540" tabindex="0"></canvas>
     </div>
@@ -199,8 +494,33 @@
     const ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("status");
     const modeMetaEl = document.getElementById("modeMeta");
-    const playAiBtn = document.getElementById("playAiBtn");
-    const playOnlineBtn = document.getElementById("playOnlineBtn");
+    const lobbyMetaEl = document.getElementById("lobbyMeta");
+    const mainMenuEl = document.getElementById("mainMenu");
+    const gameAppEl = document.getElementById("gameApp");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+    const cancelSearchBtn = document.getElementById("cancelSearchBtn");
+    const menuPlayAiBtn = document.getElementById("menuPlayAiBtn");
+    const menuPlayOnlineRandomBtn = document.getElementById("menuPlayOnlineRandomBtn");
+    const menuOpenLobbiesBtn = document.getElementById("menuOpenLobbiesBtn");
+    const menuCreateLobbyBtn = document.getElementById("menuCreateLobbyBtn");
+    const menuJoinLobbyBtn = document.getElementById("menuJoinLobbyBtn");
+    const menuJoinLobbyInput = document.getElementById("menuJoinLobbyInput");
+    const lobbiesModalEl = document.getElementById("lobbiesModal");
+    const lobbiesBackdropEl = document.getElementById("lobbiesBackdrop");
+    const lobbiesCloseBtn = document.getElementById("lobbiesCloseBtn");
+    const myLobbyCardEl = document.getElementById("myLobbyCard");
+    const lobbiesListEl = document.getElementById("lobbiesList");
+    const createLobbyFormLayerEl = document.getElementById("createLobbyFormLayer");
+    const createLobbyNameInput = document.getElementById("createLobbyNameInput");
+    const createLobbyNameErrorEl = document.getElementById("createLobbyNameError");
+    const createLobbyPasswordInput = document.getElementById("createLobbyPasswordInput");
+    const createLobbyCancelBtn = document.getElementById("createLobbyCancelBtn");
+    const createLobbySubmitBtn = document.getElementById("createLobbySubmitBtn");
+    const joinPasswordFormLayerEl = document.getElementById("joinPasswordFormLayer");
+    const joinPasswordTitle = document.getElementById("joinPasswordTitle");
+    const joinPasswordInput = document.getElementById("joinPasswordInput");
+    const joinPasswordCancelBtn = document.getElementById("joinPasswordCancelBtn");
+    const joinPasswordSubmitBtn = document.getElementById("joinPasswordSubmitBtn");
     const nicknameInput = document.getElementById("nickname");
     const camoGrid = document.getElementById("camoGrid");
     const camoButtons = Array.from(document.querySelectorAll(".camo-btn"));
@@ -221,8 +541,22 @@
     let myId = null;
     let lastSentInputAt = 0;
     let shootQueued = false;
+    let onlineShootSoundCd = 0;
     const ONLINE_SERVER_URL = "wss://tank-server-q9td.onrender.com";
     let reconnectAfterClose = false;
+    let appScreen = "menu";
+    let loopStarted = false;
+    let onlineSearchActive = false;
+    let pendingOnlineAction = null;
+    let activeLobbyCode = "";
+    let lobbyList = [];
+    let myLobbyState = null;
+    let pendingJoinLobbyCode = "";
+    let audioCtx = null;
+    let currentMusicTrack = null;
+    let currentMusicMode = "none";
+    let desiredMusicMode = "menu";
+    let audioUnlocked = false;
 
     const CAMOS = {
       classic: { body: "#4f7f45", stripe: "#c2ab73", turret: "#365a32", barrel: "#1b2a18" },
@@ -246,6 +580,8 @@
     const friction = 5.2;
     const turnSpeed = 3.4;
     const recoilStrength = 18;
+    const totalRounds = 3;
+    const roundTime = 60;
 
     function createTank(x, y, camo, angle) {
       return {
@@ -271,33 +607,304 @@
 
     let player, enemy, bullets, walls;
     let onlineState = null;
+    let currentRound = 1;
+    let roundWinners = [];
+    let roundTimer = roundTime;
+    let roundEnded = false;
+    let roundTransitionTimer = 0;
+    let roundResult = "draw";
 
     function setMode(nextMode) {
       mode = nextMode;
-      playAiBtn.style.filter = mode === "ai" ? "brightness(1.1)" : "";
-      playOnlineBtn.style.filter = mode === "online" ? "brightness(1.1)" : "";
-      modeMetaEl.textContent = mode === "ai" ? "Local match against a bot." : `Server required: ${ONLINE_SERVER_URL}`;
-      statusEl.textContent = mode === "ai" ? "Press R to start" : "Press 'Play Online'";
+      menuPlayAiBtn.style.filter = mode === "ai" ? "brightness(1.08)" : "";
+      menuPlayOnlineRandomBtn.style.filter = mode === "online" ? "brightness(1.08)" : "";
+      menuOpenLobbiesBtn.style.filter = mode === "online" ? "brightness(1.08)" : "";
+      modeMetaEl.textContent = mode === "ai" ? "" : `Server required: ${ONLINE_SERVER_URL}`;
+      statusEl.textContent = mode === "ai" ? "Press R to start" : "Online mode";
     }
 
-    function resetAiGame() {
+    function resetAiRound() {
       player = createTank(120, 270, CAMOS[selectedCamoId], 0);
       enemy = createTank(840, 270, ENEMY_CAMO, Math.PI);
       bullets = [];
       walls = baseWalls();
-      gameOver = false;
-      winner = "";
-      statusEl.textContent = "Battle in progress";
+      roundTimer = roundTime;
+      roundEnded = false;
+      roundTransitionTimer = 0;
+      roundResult = "draw";
+    }
+
+    function midiToFreq(midi) {
+      return 440 * Math.pow(2, (midi - 69) / 12);
+    }
+
+    function makeAmbientTrack(kind) {
+      const isBattle = kind === "game";
+      const bpm = isBattle ? 94 : 72;
+      const stepDur = 60 / bpm / 2;
+      const stepsPerBar = 8;
+      const totalSteps = 32;
+      const barDur = stepsPerBar * stepDur;
+      const output = audioCtx.createGain();
+      output.gain.value = 0;
+      const toneBus = audioCtx.createGain();
+      const color = audioCtx.createBiquadFilter();
+      const compressor = audioCtx.createDynamicsCompressor();
+      toneBus.gain.value = 1;
+      color.type = "lowpass";
+      color.frequency.value = isBattle ? 2300 : 1900;
+      color.Q.value = 0.35;
+      compressor.threshold.value = -18;
+      compressor.knee.value = 16;
+      compressor.ratio.value = 2.5;
+      compressor.attack.value = 0.01;
+      compressor.release.value = 0.25;
+      toneBus.connect(color);
+      color.connect(compressor);
+      compressor.connect(output);
+      output.connect(audioCtx.destination);
+
+      const activeNodes = new Set();
+      let timerId = null;
+      let step = 0;
+      let nextStepAt = audioCtx.currentTime + 0.09;
+
+      const roots = isBattle ? [38, 41, 43, 36] : [45, 43, 50, 48];
+      const menuLead = [0, null, 2, null, 4, null, 2, null, 0, null, -2, null, 0, null, 2, null, 5, null, 7, null, 5, null, 4, null, 2, null, 0, null, -2, null, 0, null];
+      const battleLead = [12, null, 14, null, 15, 14, 12, null, 10, null, 12, null, 14, 12, 10, null, 12, null, 14, null, 15, 17, 15, null, 14, null, 12, null, 10, 12, 10, null];
+      const bassRel = isBattle ? [0, 0, 3, 0, 5, 3, 0, -2] : [0, 0, 2, 0, 0, -2, 0, -5];
+
+      function registerNode(osc, gainNode, filterNode) {
+        const entry = { osc, gainNode, filterNode };
+        activeNodes.add(entry);
+        osc.onended = () => activeNodes.delete(entry);
+      }
+
+      function scheduleNote(when, midi, duration, amp, type, cutoffHz) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        osc.type = type;
+        osc.frequency.setValueAtTime(midiToFreq(midi), when);
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(cutoffHz, when);
+        filter.Q.value = 0.25;
+
+        const attack = 0.02;
+        const release = 0.12;
+        gain.gain.setValueAtTime(0.0001, when);
+        gain.gain.linearRampToValueAtTime(amp, when + attack);
+        gain.gain.setValueAtTime(amp, when + Math.max(attack + 0.02, duration * 0.55));
+        gain.gain.linearRampToValueAtTime(0.0001, when + duration + release);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(toneBus);
+        osc.start(when);
+        osc.stop(when + duration + release + 0.04);
+        registerNode(osc, gain, filter);
+      }
+
+      function scheduleKick(when, level) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(120, when);
+        osc.frequency.exponentialRampToValueAtTime(45, when + 0.18);
+        gain.gain.setValueAtTime(0.0001, when);
+        gain.gain.linearRampToValueAtTime(level, when + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.22);
+        osc.connect(gain);
+        gain.connect(toneBus);
+        osc.start(when);
+        osc.stop(when + 0.26);
+        registerNode(osc, gain, null);
+      }
+
+      function scheduleStep(stepIndex, when) {
+        const barIndex = Math.floor(stepIndex / stepsPerBar) % roots.length;
+        const root = roots[barIndex];
+
+        if (stepIndex % stepsPerBar === 0) {
+          scheduleNote(when, root + 12, barDur * 0.95, isBattle ? 0.018 : 0.021, "triangle", isBattle ? 1800 : 1500);
+          scheduleNote(when, root + 19, barDur * 0.95, isBattle ? 0.013 : 0.016, "sine", isBattle ? 1600 : 1300);
+          scheduleNote(when, root + 24, barDur * 0.95, isBattle ? 0.009 : 0.011, "triangle", isBattle ? 1900 : 1600);
+        }
+
+        const bassIndex = Math.floor(stepIndex / 2) % bassRel.length;
+        if (stepIndex % 2 === 0) {
+          scheduleNote(when, root - 12 + bassRel[bassIndex], stepDur * (isBattle ? 1.4 : 1.7), isBattle ? 0.062 : 0.05, isBattle ? "sawtooth" : "triangle", isBattle ? 560 : 480);
+        }
+
+        const leadRel = (isBattle ? battleLead : menuLead)[stepIndex % totalSteps];
+        if (leadRel != null) {
+          const leadMidi = root + leadRel + (isBattle ? 12 : 7);
+          scheduleNote(when, leadMidi, stepDur * (isBattle ? 0.9 : 1.05), isBattle ? 0.028 : 0.023, "triangle", isBattle ? 2400 : 2100);
+        }
+
+        if (isBattle) {
+          if (stepIndex % 4 === 0) scheduleKick(when, 0.06);
+          if (stepIndex % 8 === 6) scheduleKick(when, 0.045);
+        }
+      }
+
+      function scheduler() {
+        const lookAhead = 0.22;
+        while (nextStepAt < audioCtx.currentTime + lookAhead) {
+          scheduleStep(step, nextStepAt);
+          nextStepAt += stepDur;
+          step = (step + 1) % totalSteps;
+        }
+      }
+
+      return {
+        output,
+        start() {
+          scheduler();
+          timerId = setInterval(scheduler, 50);
+        },
+        stop() {
+          if (timerId) clearInterval(timerId);
+          for (const node of activeNodes) {
+            try { node.osc.stop(); } catch {}
+            try { node.gainNode.disconnect(); } catch {}
+            try { if (node.filterNode) node.filterNode.disconnect(); } catch {}
+          }
+          activeNodes.clear();
+          try { toneBus.disconnect(); } catch {}
+          try { color.disconnect(); } catch {}
+          try { compressor.disconnect(); } catch {}
+          try { output.disconnect(); } catch {}
+        }
+      };
+    }
+
+    function ensureAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    function playShootSound() {
+      if (!audioUnlocked) return;
+      ensureAudioContext();
+      const now = audioCtx.currentTime;
+      const output = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      const oscA = audioCtx.createOscillator();
+      const oscB = audioCtx.createOscillator();
+
+      output.gain.setValueAtTime(0.0001, now);
+      output.gain.linearRampToValueAtTime(0.045, now + 0.01);
+      output.gain.exponentialRampToValueAtTime(0.0001, now + 0.19);
+
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(2200, now);
+      filter.frequency.exponentialRampToValueAtTime(900, now + 0.18);
+      filter.Q.value = 0.4;
+
+      oscA.type = "triangle";
+      oscB.type = "sine";
+      oscA.frequency.setValueAtTime(760, now);
+      oscA.frequency.exponentialRampToValueAtTime(290, now + 0.18);
+      oscB.frequency.setValueAtTime(520, now);
+      oscB.frequency.exponentialRampToValueAtTime(210, now + 0.17);
+
+      oscA.connect(filter);
+      oscB.connect(filter);
+      filter.connect(output);
+      output.connect(audioCtx.destination);
+
+      oscA.start(now);
+      oscB.start(now);
+      oscA.stop(now + 0.21);
+      oscB.stop(now + 0.21);
+      oscA.onended = () => {
+        try { oscA.disconnect(); } catch {}
+        try { oscB.disconnect(); } catch {}
+        try { filter.disconnect(); } catch {}
+        try { output.disconnect(); } catch {}
+      };
+    }
+
+    function fadeOutAndStop(track, duration = 0.7) {
+      if (!track || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      track.output.gain.cancelScheduledValues(now);
+      track.output.gain.setValueAtTime(track.output.gain.value, now);
+      track.output.gain.linearRampToValueAtTime(0.0001, now + duration);
+      setTimeout(() => track.stop(), Math.max(120, duration * 1000 + 80));
+    }
+
+    function startTrack(mode) {
+      ensureAudioContext();
+      const next = makeAmbientTrack(mode);
+      next.start();
+      const target = mode === "game" ? 0.22 : 0.19;
+      const now = audioCtx.currentTime;
+      next.output.gain.setValueAtTime(0.0001, now);
+      next.output.gain.linearRampToValueAtTime(target, now + 0.8);
+      return next;
+    }
+
+    function playMenuMusic() {
+      desiredMusicMode = "menu";
+      if (!audioUnlocked) return;
+      if (currentMusicMode === "menu") return;
+      if (currentMusicTrack) fadeOutAndStop(currentMusicTrack, 0.8);
+      currentMusicTrack = startTrack("menu");
+      currentMusicMode = "menu";
+    }
+
+    function playGameMusic() {
+      desiredMusicMode = "game";
+      if (!audioUnlocked) return;
+      if (currentMusicMode === "game") return;
+      if (currentMusicTrack) fadeOutAndStop(currentMusicTrack, 0.55);
+      currentMusicTrack = startTrack("game");
+      currentMusicMode = "game";
+    }
+
+    function stopMusic() {
+      desiredMusicMode = "none";
+      if (currentMusicTrack) {
+        fadeOutAndStop(currentMusicTrack, 0.45);
+        currentMusicTrack = null;
+      }
+      currentMusicMode = "none";
+    }
+
+    function syncMusicWithScreen() {
+      if (appScreen === "game") playGameMusic();
+      else playMenuMusic();
+    }
+
+    function unlockAudioAndSync() {
+      ensureAudioContext();
+      audioCtx.resume().then(() => {
+        audioUnlocked = true;
+        if (desiredMusicMode === "game") playGameMusic();
+        else if (desiredMusicMode === "menu") playMenuMusic();
+      }).catch(() => {});
     }
     function startAiGame() {
-      resetAiGame();
+      currentRound = 1;
+      roundWinners = [];
+      gameOver = false;
+      winner = "";
+      resetAiRound();
       gameStarted = true;
+      statusEl.textContent = "Battle in progress";
     }
     function enterWaitingState() {
       gameStarted = false;
       gameOver = false;
       winner = "";
       bullets = [];
+      currentRound = 1;
+      roundWinners = [];
+      roundTimer = roundTime;
+      roundEnded = false;
+      roundTransitionTimer = 0;
     }
 
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -323,16 +930,40 @@
 
     function shoot(tank, owner) {
       if (!gameStarted || tank.fireCd > 0 || gameOver) return;
+      if (mode === "ai" && roundEnded) return;
       tank.fireCd = 0.45;
       bullets.push({ x: tank.x + Math.cos(tank.angle) * 24, y: tank.y + Math.sin(tank.angle) * 24, vx: Math.cos(tank.angle) * 380, vy: Math.sin(tank.angle) * 380, r: 4, owner });
       tank.driveSpeed -= recoilStrength;
+      playShootSound();
     }
+    function finishAiRound(side) {
+      if (roundEnded || gameOver) return;
+      roundEnded = true;
+      roundTransitionTimer = 1.05;
+      roundResult = side;
+      roundWinners.push(side);
+      statusEl.textContent = side === "player" ? "Round won" : side === "enemy" ? "Round lost" : "Round draw";
+    }
+
+    function finishAiMatch() {
+      const playerWins = roundWinners.filter((x) => x === "player").length;
+      const enemyWins = roundWinners.filter((x) => x === "enemy").length;
+      winner = playerWins === enemyWins ? "Match draw" : playerWins > enemyWins ? "You win match!" : "AI wins match";
+      gameOver = true;
+      gameStarted = false;
+      statusEl.textContent = `${winner} Press R to restart`;
+    }
+
+    function resolveAiTimerRound() {
+      if (player.hp > enemy.hp) finishAiRound("player");
+      else if (enemy.hp > player.hp) finishAiRound("enemy");
+      else finishAiRound("draw");
+    }
+
     function damageTank(tank, by) {
       tank.hp -= 1;
       if (tank.hp <= 0) {
-        gameOver = true;
-        winner = by === "player" ? "You win!" : "AI wins";
-        statusEl.textContent = `${winner} Press R to restart`;
+        finishAiRound(by === "player" ? "player" : "enemy");
       }
     }
 
@@ -510,6 +1141,35 @@
       ctx.textAlign = "start";
       ctx.textBaseline = "alphabetic";
     }
+    function drawTankHpBar(tank, hp) {
+      if (hp <= 0) return;
+      const maxHp = 3;
+      const live = Math.max(0, Math.min(maxHp, hp | 0));
+      const w = 39;
+      const h = 8;
+      const x = tank.x - w / 2;
+      const y = tank.y + tank.h / 2 + 22;
+      const segW = 12;
+      const gap = 1.5;
+
+      ctx.strokeStyle = "#7a7a7a";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+
+      for (let i = 0; i < maxHp; i++) {
+        const sx = x + 1 + i * (segW + gap);
+        ctx.fillStyle = i < live ? "#39d26b" : "#0a0a0a";
+        ctx.fillRect(sx, y + 1, segW, h - 2);
+      }
+
+      ctx.strokeStyle = "#7a7a7a";
+      ctx.beginPath();
+      ctx.moveTo(x + segW + gap + 0.5, y + 1);
+      ctx.lineTo(x + segW + gap + 0.5, y + h - 1);
+      ctx.moveTo(x + (segW + gap) * 2 + 0.5, y + 1);
+      ctx.lineTo(x + (segW + gap) * 2 + 0.5, y + h - 1);
+      ctx.stroke();
+    }
     function drawWalls(list) {
       for (const wall of list || []) {
         ctx.fillStyle = "rgba(0,0,0,0.2)";
@@ -562,11 +1222,70 @@
       }
     }
 
+    function formatRoundTime(secondsLeft) {
+      const s = Math.max(0, Math.ceil(secondsLeft));
+      const mm = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function getRoundHudState() {
+      if (mode === "online") {
+        if (onlineState?.match) {
+          const m = onlineState.match;
+          return { currentRound: m.currentRound || 1, timer: m.roundTimeLeft ?? roundTime, winners: m.roundWinners || [] };
+        }
+        return { currentRound: 1, timer: roundTime, winners: [] };
+      }
+      return { currentRound, timer: roundTimer, winners: roundWinners };
+    }
+
+    function drawRoundHud() {
+      const hud = getRoundHudState();
+      const cx = world.w / 2;
+      const top = 14;
+      const hudWidth = 192;
+      const hudHeight = 60;
+
+      ctx.fillStyle = "rgba(10, 18, 28, 0.75)";
+      ctx.strokeStyle = "rgba(130, 160, 180, 0.55)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(cx - hudWidth / 2, top, hudWidth, hudHeight);
+      ctx.strokeRect(cx - hudWidth / 2, top, hudWidth, hudHeight);
+
+      ctx.fillStyle = "#e8f2ff";
+      ctx.textAlign = "center";
+      ctx.font = "bold 14px Segoe UI";
+      const safeRound = Math.min(totalRounds, Math.max(1, hud.currentRound));
+      ctx.fillText(`Round ${safeRound} / ${totalRounds}`, cx, top + 17);
+      ctx.font = "bold 18px 'Courier New', monospace";
+      ctx.fillText(formatRoundTime(hud.timer), cx, top + 36);
+
+      const dotStartX = cx - 22;
+      const dotsY = top + 50;
+      for (let i = 0; i < totalRounds; i++) {
+        const w = hud.winners[i];
+        const x = dotStartX + i * 22;
+        let fill = "#2d3b48";
+        if (w === "player" || w === "player0") fill = "#5cc8ff";
+        else if (w === "enemy" || w === "player1") fill = "#ff8a8a";
+        else if (w === "draw") fill = "#aab8c3";
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.arc(x, dotsY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#7c8c99";
+        ctx.stroke();
+      }
+      ctx.textAlign = "start";
+    }
+
     function render() {
       ctx.clearRect(0, 0, world.w, world.h);
       ctx.fillStyle = "rgba(255,255,255,0.05)";
       for (let x = 0; x < world.w; x += 40) ctx.fillRect(x, 0, 1, world.h);
       for (let y = 0; y < world.h; y += 40) ctx.fillRect(0, y, world.w, 1);
+      drawRoundHud();
 
       if (mode === "online" && onlineState) {
         const p0 = onlineState.players?.[0];
@@ -575,8 +1294,14 @@
         drawBullets(onlineState.bullets);
         if (p0) drawTank({ ...p0, camo: ONLINE_COLORS[0] });
         if (p1) drawTank({ ...p1, camo: ONLINE_COLORS[1] });
-        if (p0) drawTankNickname(p0, formatNickname(onlineState.nicknames?.[0], "P1"));
-        if (p1) drawTankNickname(p1, formatNickname(onlineState.nicknames?.[1], "P2"));
+        if (p0) {
+          drawTankNickname(p0, formatNickname(onlineState.nicknames?.[0], "P1"));
+          drawTankHpBar(p0, p0.hp);
+        }
+        if (p1) {
+          drawTankNickname(p1, formatNickname(onlineState.nicknames?.[1], "P2"));
+          drawTankHpBar(p1, p1.hp);
+        }
         ctx.fillStyle = "#dbefff";
         ctx.font = "16px Segoe UI";
         ctx.fillText(`P1 HP: ${p0 ? p0.hp : "-"}`, 16, 24);
@@ -587,7 +1312,9 @@
         drawTank(player);
         drawTank(enemy);
         drawTankNickname(player, formatNickname(nicknameInput.value, "PLAYER"));
+        drawTankHpBar(player, player.hp);
         drawTankNickname(enemy, formatNickname("AI BOT", "AI BOT"));
+        drawTankHpBar(enemy, enemy.hp);
         ctx.fillStyle = "#dbefff";
         ctx.font = "16px Segoe UI";
         ctx.fillText(`Your HP: ${player.hp}`, 16, 24);
@@ -597,7 +1324,7 @@
       if (mode === "ai" && gameOver) drawOverlay(winner, "Press R to restart");
       else if (mode === "ai" && !gameStarted) drawOverlay("Press R to start");
       else if (mode === "online" && gameOver) drawOverlay(winner, "Press Play Online");
-      else if (mode === "online" && !gameStarted) drawOverlay("Online mode", "Waiting for player...");
+      else if (mode === "online" && !gameStarted) drawOverlay("Online mode", onlineSearchActive ? "Searching for player..." : (statusEl.textContent || "Press Play Online"));
       drawCrosshair();
     }
 
@@ -605,6 +1332,10 @@
       if (mode !== "online" || !onlineSocket || onlineSocket.readyState !== WebSocket.OPEN || !myId) return;
       const now = performance.now();
       if (!shootQueued && now - lastSentInputAt < 40) return;
+      if (shootQueued && onlineShootSoundCd <= 0) {
+        playShootSound();
+        onlineShootSoundCd = 0.45;
+      }
       lastSentInputAt = now;
       onlineSocket.send(JSON.stringify({
         type: "input",
@@ -626,6 +1357,225 @@
       onlineState = null;
       myId = null;
       shootQueued = false;
+      onlineShootSoundCd = 0;
+      onlineSearchActive = false;
+      activeLobbyCode = "";
+      myLobbyState = null;
+      lobbyList = [];
+      hideCreateLobbyForm();
+      hideJoinPasswordForm();
+      cancelSearchBtn.classList.add("hidden");
+      renderLobbiesUi();
+    }
+
+    function setLobbyMeta(text) {
+      lobbyMetaEl.textContent = text || "";
+    }
+
+    function setLobbiesModalOpen(open) {
+      lobbiesModalEl.classList.toggle("hidden", !open);
+    }
+
+    function openLobbiesModal() {
+      setLobbiesModalOpen(true);
+      setLobbyMeta("Loading lobbies...");
+      playMenuMusic();
+      connectOnline({ type: "list_lobbies" }, false);
+    }
+
+    function closeLobbiesModal() {
+      setLobbiesModalOpen(false);
+      hideCreateLobbyForm();
+      hideJoinPasswordForm();
+      setLobbyMeta("");
+    }
+
+    function showCreateLobbyForm() {
+      hideJoinPasswordForm();
+      createLobbyNameInput.value = "";
+      createLobbyPasswordInput.value = "";
+      setCreateLobbyNameError("");
+      createLobbyFormLayerEl.classList.remove("hidden");
+      createLobbyNameInput.focus();
+    }
+
+    function hideCreateLobbyForm() {
+      setCreateLobbyNameError("");
+      createLobbyFormLayerEl.classList.add("hidden");
+    }
+
+    function setCreateLobbyNameError(text) {
+      if (!createLobbyNameErrorEl) return;
+      createLobbyNameErrorEl.textContent = text || "";
+    }
+
+    function submitCreateLobby() {
+      const lobbyName = (createLobbyNameInput.value || "").trim();
+      const password = (createLobbyPasswordInput.value || "").trim();
+      if (!lobbyName) {
+        setCreateLobbyNameError("Lobby name is required.");
+        createLobbyNameInput.focus();
+        return;
+      }
+      setCreateLobbyNameError("");
+      setLobbyMeta("Creating lobby...");
+      connectOnline({ type: "create_lobby", lobbyName, password }, false);
+    }
+
+    function showJoinPasswordForm(code, lobbyName = "Lobby") {
+      hideCreateLobbyForm();
+      pendingJoinLobbyCode = code || "";
+      joinPasswordInput.value = "";
+      joinPasswordTitle.textContent = `Enter password for ${lobbyName}`;
+      joinPasswordFormLayerEl.classList.remove("hidden");
+      joinPasswordInput.focus();
+    }
+
+    function hideJoinPasswordForm() {
+      pendingJoinLobbyCode = "";
+      joinPasswordFormLayerEl.classList.add("hidden");
+    }
+
+    function sendOnlineAction(socket, action) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      const nickname = formatNickname(nicknameInput.value, "PLAYER");
+      if (action?.type === "create_lobby") {
+        modeMetaEl.textContent = "Creating lobby...";
+        socket.send(JSON.stringify({
+          type: "create_lobby",
+          nickname,
+          lobbyName: action.lobbyName || "",
+          password: action.password || ""
+        }));
+        return;
+      }
+      if (action?.type === "join_lobby") {
+        modeMetaEl.textContent = "Joining lobby...";
+        socket.send(JSON.stringify({
+          type: "join_lobby",
+          code: action.code,
+          nickname,
+          password: action.password || ""
+        }));
+        return;
+      }
+      if (action?.type === "start_lobby_game") {
+        socket.send(JSON.stringify({ type: "start_lobby_game" }));
+        return;
+      }
+      if (action?.type === "cancel_queue") {
+        socket.send(JSON.stringify({ type: "cancel_queue" }));
+        return;
+      }
+      if (action?.type === "list_lobbies") {
+        socket.send(JSON.stringify({ type: "list_lobbies" }));
+        return;
+      }
+      modeMetaEl.textContent = "Searching for player...";
+      socket.send(JSON.stringify({ type: "join_random", nickname }));
+    }
+
+    function renderLobbiesUi() {
+      myLobbyCardEl.innerHTML = "";
+      if (myLobbyState) {
+        myLobbyCardEl.classList.remove("hidden");
+        const title = document.createElement("div");
+        title.style.fontWeight = "800";
+        title.style.marginBottom = "6px";
+        title.textContent = `${myLobbyState.lobbyName || "Lobby"} (${myLobbyState.code})`;
+        const players = document.createElement("div");
+        players.style.fontSize = "13px";
+        players.style.marginBottom = "8px";
+        const guestNick = myLobbyState.joinedNickname || "Waiting for player...";
+        players.textContent = `Creator: ${myLobbyState.creatorNickname} | Player 2: ${guestNick}`;
+        myLobbyCardEl.append(title, players);
+
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+        actions.style.alignItems = "center";
+
+        if (myLobbyState.isCreator && myLobbyState.canStart) {
+          const startBtn = document.createElement("button");
+          startBtn.type = "button";
+          startBtn.className = "main-action-btn";
+          startBtn.style.height = "34px";
+          startBtn.style.width = "160px";
+          startBtn.textContent = "Start Game";
+          startBtn.addEventListener("click", () => connectOnline({ type: "start_lobby_game" }, false));
+          actions.appendChild(startBtn);
+        }
+
+        const leaveBtn = document.createElement("button");
+        leaveBtn.type = "button";
+        leaveBtn.className = "main-action-btn";
+        leaveBtn.style.height = "34px";
+        leaveBtn.style.width = "120px";
+        leaveBtn.textContent = "Leave Lobby";
+        leaveBtn.addEventListener("click", () => connectOnline({ type: "cancel_queue" }, false));
+        actions.appendChild(leaveBtn);
+
+        myLobbyCardEl.appendChild(actions);
+      } else {
+        myLobbyCardEl.classList.add("hidden");
+      }
+
+      lobbiesListEl.innerHTML = "";
+      if (!Array.isArray(lobbyList) || lobbyList.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "lobby-empty";
+        empty.textContent = "No lobbies yet";
+        lobbiesListEl.appendChild(empty);
+        return;
+      }
+
+      for (const lobby of lobbyList) {
+        const row = document.createElement("div");
+        row.className = "lobby-item";
+
+        const info = document.createElement("div");
+        const name = document.createElement("div");
+        name.style.fontWeight = "700";
+        const lockMark = lobby.hasPassword ? " \uD83D\uDD12" : "";
+        name.textContent = `${lobby.lobbyName || "Lobby"}${lockMark}`;
+        const members = document.createElement("div");
+        members.style.fontSize = "12px";
+        members.style.color = "#b9d8ea";
+        const second = lobby.joinedNickname || "Waiting for player...";
+        members.textContent = `Code: ${lobby.code} | Creator: ${lobby.creatorNickname} | ${second}`;
+        info.append(name, members);
+
+        const joinBtn = document.createElement("button");
+        joinBtn.type = "button";
+        joinBtn.className = "main-action-btn";
+        joinBtn.style.height = "34px";
+        joinBtn.style.width = "92px";
+        joinBtn.textContent = "Join";
+
+        const isMine = !!myLobbyState && myLobbyState.code === lobby.code;
+        const isFull = lobby.playerCount >= 2;
+        if (isMine) {
+          joinBtn.disabled = true;
+          joinBtn.textContent = "Inside";
+        } else if (isFull) {
+          joinBtn.disabled = true;
+          joinBtn.textContent = "Full";
+        } else if (myLobbyState) {
+          joinBtn.disabled = true;
+          joinBtn.textContent = "Busy";
+        } else {
+          joinBtn.addEventListener("click", () => {
+            if (lobby.hasPassword) {
+              showJoinPasswordForm(lobby.code, lobby.lobbyName || "Lobby");
+            } else {
+              connectOnline({ type: "join_lobby", code: lobby.code }, false);
+            }
+          });
+        }
+
+        row.append(info, joinBtn);
+        lobbiesListEl.appendChild(row);
+      }
     }
 
     function createOnlineSocket() {
@@ -639,33 +1589,114 @@
       socket.onopen = () => {
         if (onlineSocket !== socket) return;
         socket._opened = true;
-        modeMetaEl.textContent = "Connected. Waiting for second player.";
-        socket.send(JSON.stringify({ type: "join", nickname: formatNickname(nicknameInput.value, "PLAYER") }));
+        sendOnlineAction(socket, pendingOnlineAction || { type: "list_lobbies" });
+        pendingOnlineAction = null;
       };
 
       socket.onmessage = (ev) => {
         if (onlineSocket !== socket) return;
         const msg = JSON.parse(ev.data);
         if (msg.type === "welcome") myId = msg.playerId;
+        if (msg.type === "lobby_list") {
+          lobbyList = Array.isArray(msg.lobbies) ? msg.lobbies : [];
+          renderLobbiesUi();
+        }
+        if (msg.type === "lobby_state") {
+          myLobbyState = msg.lobby || null;
+          activeLobbyCode = myLobbyState?.code || "";
+          onlineSearchActive = !!myLobbyState;
+          if (myLobbyState) {
+            hideCreateLobbyForm();
+            hideJoinPasswordForm();
+            cancelSearchBtn.classList.remove("hidden");
+            const waitingText = myLobbyState.joinedNickname ? "Ready to start" : "Waiting for player...";
+            statusEl.textContent = `Lobby ${myLobbyState.code}`;
+            modeMetaEl.textContent = `Lobby code: ${myLobbyState.code}`;
+            setLobbyMeta(`${waitingText}`);
+          } else {
+            cancelSearchBtn.classList.add("hidden");
+            setLobbyMeta("");
+          }
+          renderLobbiesUi();
+        }
         if (msg.type === "queue") {
+          onlineSearchActive = true;
+          cancelSearchBtn.classList.remove("hidden");
           gameStarted = false;
           gameOver = false;
           winner = "";
-          statusEl.textContent = "Waiting for second player...";
+          statusEl.textContent = msg.message || "Searching for player...";
+          modeMetaEl.textContent = msg.message || "Searching for player...";
+        }
+        if (msg.type === "lobby_created") {
+          hideCreateLobbyForm();
+          onlineSearchActive = true;
+          activeLobbyCode = msg.code || "";
+          cancelSearchBtn.classList.remove("hidden");
+          statusEl.textContent = `Lobby ${activeLobbyCode} created. Waiting...`;
+          modeMetaEl.textContent = `Lobby code: ${activeLobbyCode}`;
+          setLobbyMeta(`Lobby code: ${activeLobbyCode}`);
+        }
+        if (msg.type === "join_password_required") {
+          showJoinPasswordForm(msg.code || "", msg.lobbyName || "Lobby");
+          setLobbyMeta(msg.message || "Enter password");
+        }
+        if (msg.type === "lobby_waiting") {
+          onlineSearchActive = true;
+          activeLobbyCode = msg.code || activeLobbyCode;
+          cancelSearchBtn.classList.remove("hidden");
+          statusEl.textContent = `Lobby ${activeLobbyCode} waiting for player...`;
+          modeMetaEl.textContent = `Lobby code: ${activeLobbyCode}`;
+          setLobbyMeta(msg.message || "Waiting for player...");
+        }
+        if (msg.type === "cancelled") {
+          onlineSearchActive = false;
+          activeLobbyCode = "";
+          myLobbyState = null;
+          cancelSearchBtn.classList.add("hidden");
+          statusEl.textContent = msg.message || "Search cancelled";
+          modeMetaEl.textContent = msg.message || "Search cancelled";
+          if (!lobbiesModalEl.classList.contains("hidden")) sendOnlineAction(socket, { type: "list_lobbies" });
+          renderLobbiesUi();
+        }
+        if (msg.type === "error") {
+          onlineSearchActive = false;
+          cancelSearchBtn.classList.add("hidden");
+          statusEl.textContent = msg.message || "Online error";
+          modeMetaEl.textContent = msg.message || "Online error";
+          setLobbyMeta(msg.message || "Online error");
+          if (!lobbiesModalEl.classList.contains("hidden")) sendOnlineAction(socket, { type: "list_lobbies" });
         }
         if (msg.type === "start") {
+          onlineSearchActive = false;
+          myLobbyState = null;
+          activeLobbyCode = "";
+          renderLobbiesUi();
+          cancelSearchBtn.classList.add("hidden");
           onlineState = msg.state;
           gameStarted = true;
           gameOver = false;
           winner = "";
           statusEl.textContent = "Online battle in progress";
           modeMetaEl.textContent = `You are player ${myId === "player0" ? "1" : "2"}`;
+          closeLobbiesModal();
+          if (appScreen !== "game") openGameScreen();
         }
         if (msg.type === "state") onlineState = msg.state;
         if (msg.type === "end") {
           gameOver = true;
           gameStarted = false;
           winner = msg.winnerId === myId ? "You win!" : "You lose";
+          if (msg.winnerId === "draw") winner = "Match draw";
+          if (Array.isArray(msg.roundWinners)) {
+            if (!onlineState) onlineState = {};
+            onlineState.match = {
+              ...(onlineState.match || {}),
+              currentRound: totalRounds,
+              roundTimeLeft: 0,
+              roundWinners: msg.roundWinners
+            };
+          }
           statusEl.textContent = winner;
         }
       };
@@ -677,6 +1708,11 @@
       socket.onclose = () => {
         if (onlineSocket && onlineSocket !== socket) return;
         if (onlineSocket === socket) onlineSocket = null;
+        onlineSearchActive = false;
+        myLobbyState = null;
+        activeLobbyCode = "";
+        renderLobbiesUi();
+        cancelSearchBtn.classList.add("hidden");
 
         if (socket._expectedClose && reconnectAfterClose) {
           reconnectAfterClose = false;
@@ -691,6 +1727,7 @@
         if (socket._hadError) {
           statusEl.textContent = "Server disconnected";
           modeMetaEl.textContent = "Server unavailable. Run: node server.js";
+          setLobbyMeta("Server unavailable");
         } else {
           statusEl.textContent = "Disconnected. Press Play Online";
           modeMetaEl.textContent = "Connection closed. Ready to reconnect.";
@@ -698,28 +1735,124 @@
       };
     }
 
-    function connectOnline() {
+    function connectOnline(action = { type: "join_random" }, hardReset = true) {
       setMode("online");
-      resetOnlineSessionState();
+      pendingOnlineAction = action;
+      if (hardReset) resetOnlineSessionState();
       reconnectAfterClose = false;
 
-      if (onlineSocket && (onlineSocket.readyState === WebSocket.OPEN || onlineSocket.readyState === WebSocket.CONNECTING || onlineSocket.readyState === WebSocket.CLOSING)) {
-        reconnectAfterClose = true;
+      if (onlineSocket && onlineSocket.readyState === WebSocket.OPEN) {
+        sendOnlineAction(onlineSocket, action);
+        pendingOnlineAction = null;
+        return;
+      }
+
+      if (onlineSocket && onlineSocket.readyState === WebSocket.CONNECTING) {
+        return;
+      }
+
+      if (onlineSocket && onlineSocket.readyState === WebSocket.CLOSING) {
         onlineSocket._expectedClose = true;
-        onlineSocket.close();
+        reconnectAfterClose = true;
         return;
       }
 
       createOnlineSocket();
     }
 
+    function cancelOnlineSearch() {
+      if (mode !== "online") return;
+      onlineSearchActive = false;
+      cancelSearchBtn.classList.add("hidden");
+      if (onlineSocket && onlineSocket.readyState === WebSocket.OPEN) {
+        sendOnlineAction(onlineSocket, { type: "cancel_queue" });
+      }
+      if (appScreen === "game") {
+        goToMainMenu();
+      } else {
+        myLobbyState = null;
+        activeLobbyCode = "";
+        renderLobbiesUi();
+      }
+    }
+
+    function openGameScreen() {
+      appScreen = "game";
+      closeLobbiesModal();
+      mainMenuEl.classList.add("hidden");
+      gameAppEl.classList.remove("hidden");
+      playGameMusic();
+      if (!loopStarted) {
+        loopStarted = true;
+        requestAnimationFrame((ts) => { lastTime = ts; tick(ts); });
+      }
+    }
+
+    function startFromMainMenu(modeToStart, action = null) {
+      closeLobbiesModal();
+      setLobbyMeta("");
+      if (modeToStart === "online") {
+        openGameScreen();
+        connectOnline(action || { type: "join_random" });
+      } else {
+        if (onlineSocket) {
+          onlineSocket._expectedClose = true;
+          onlineSocket.close();
+          onlineSocket = null;
+        }
+        setMode("ai");
+        openGameScreen();
+        startAiGame();
+      }
+      canvas.focus();
+    }
+
+    function goToMainMenu() {
+      reconnectAfterClose = false;
+      if (onlineSocket) {
+        onlineSocket._expectedClose = true;
+        onlineSocket.close();
+        onlineSocket = null;
+      }
+      appScreen = "menu";
+      mainMenuEl.classList.remove("hidden");
+      gameAppEl.classList.add("hidden");
+      closeLobbiesModal();
+      myLobbyState = null;
+      lobbyList = [];
+      renderLobbiesUi();
+      setMode("ai");
+      enterWaitingState();
+      playMenuMusic();
+    }
+
     function tick(ts) {
       const dt = Math.max(0, Math.min(0.033, (ts - lastTime) / 1000));
       lastTime = ts;
+      onlineShootSoundCd = Math.max(0, onlineShootSoundCd - dt);
+      if (appScreen !== "game") {
+        requestAnimationFrame(tick);
+        return;
+      }
       if (mode === "ai" && gameStarted && !gameOver) {
-        updatePlayer(dt);
-        updateEnemy(dt);
-        updateBullets(dt);
+        if (!roundEnded) {
+          updatePlayer(dt);
+          updateEnemy(dt);
+          updateBullets(dt);
+          roundTimer -= dt;
+          if (roundTimer <= 0) resolveAiTimerRound();
+        } else {
+          roundTransitionTimer -= dt;
+          if (roundTransitionTimer <= 0) {
+            if (currentRound < totalRounds) {
+              currentRound += 1;
+              resetAiRound();
+              statusEl.textContent = "Battle in progress";
+            } else {
+              finishAiMatch();
+            }
+          }
+        }
       } else if (mode === "online") {
         sendOnlineInput();
       }
@@ -728,6 +1861,7 @@
     }
 
     window.addEventListener("keydown", (e) => {
+      if (appScreen !== "game") return;
       keys.add(e.code);
       if (e.code === "Space") {
         e.preventDefault();
@@ -736,20 +1870,57 @@
       }
       if (e.code === "KeyR" && mode === "ai") startAiGame();
     });
+    window.addEventListener("pointerdown", unlockAudioAndSync, { once: true });
+    window.addEventListener("keydown", unlockAudioAndSync, { once: true });
     window.addEventListener("keyup", (e) => keys.delete(e.code));
-
-    playAiBtn.addEventListener("click", () => {
-      reconnectAfterClose = false;
-      if (onlineSocket) {
-        onlineSocket._expectedClose = true;
-        onlineSocket.close();
-        onlineSocket = null;
+    menuPlayAiBtn.addEventListener("click", () => startFromMainMenu("ai"));
+    menuPlayOnlineRandomBtn.addEventListener("click", () => startFromMainMenu("online", { type: "join_random" }));
+    menuOpenLobbiesBtn.addEventListener("click", () => openLobbiesModal());
+    lobbiesCloseBtn.addEventListener("click", () => closeLobbiesModal());
+    lobbiesBackdropEl.addEventListener("click", () => closeLobbiesModal());
+    menuCreateLobbyBtn.addEventListener("click", () => showCreateLobbyForm());
+    menuJoinLobbyBtn.addEventListener("click", () => {
+      const code = (menuJoinLobbyInput.value || "").trim().toUpperCase();
+      if (!code) {
+        setLobbyMeta("Enter lobby code");
+        return;
       }
-      setMode("ai");
-      startAiGame();
-      canvas.focus();
+      const lobby = lobbyList.find((item) => item.code === code);
+      if (lobby?.hasPassword) {
+        showJoinPasswordForm(code, lobby.lobbyName || "Lobby");
+      } else {
+        connectOnline({ type: "join_lobby", code }, false);
+      }
     });
-    playOnlineBtn.addEventListener("click", () => { connectOnline(); canvas.focus(); });
+    createLobbyCancelBtn.addEventListener("click", () => hideCreateLobbyForm());
+    createLobbySubmitBtn.addEventListener("click", () => submitCreateLobby());
+    createLobbyNameInput.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      submitCreateLobby();
+    });
+    createLobbyPasswordInput.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      submitCreateLobby();
+    });
+    createLobbyNameInput.addEventListener("input", () => {
+      if ((createLobbyNameInput.value || "").trim()) setCreateLobbyNameError("");
+    });
+    joinPasswordCancelBtn.addEventListener("click", () => hideJoinPasswordForm());
+    joinPasswordSubmitBtn.addEventListener("click", () => {
+      const code = pendingJoinLobbyCode;
+      const password = (joinPasswordInput.value || "").trim();
+      if (!code) return;
+      if (!password) {
+        setLobbyMeta("Enter password");
+        joinPasswordInput.focus();
+        return;
+      }
+      connectOnline({ type: "join_lobby", code, password }, false);
+    });
+    cancelSearchBtn.addEventListener("click", () => cancelOnlineSearch());
+    backToMenuBtn.addEventListener("click", () => goToMainMenu());
 
     canvas.addEventListener("mousemove", (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -776,10 +1947,11 @@
       canvas.focus();
     });
 
-    resetAiGame();
+    resetAiRound();
     enterWaitingState();
+    renderLobbiesUi();
     setMode("ai");
-    requestAnimationFrame((ts) => { lastTime = ts; tick(ts); });
+    syncMusicWithScreen();
   </script>
 </body>
 </html>
