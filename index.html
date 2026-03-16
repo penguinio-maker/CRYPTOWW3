@@ -222,6 +222,7 @@
     let lastSentInputAt = 0;
     let shootQueued = false;
     const ONLINE_SERVER_URL = "wss://tank-server-q9td.onrender.com";
+    let reconnectAfterClose = false;
 
     const CAMOS = {
       classic: { body: "#4f7f45", stripe: "#c2ab73", turret: "#365a32", barrel: "#1b2a18" },
@@ -238,13 +239,24 @@
       { body: "#5cc8ff", stripe: "#9ee5ff", turret: "#2f95c8", barrel: "#194c6a" },
       { body: "#ff8a8a", stripe: "#ffc3c3", turret: "#c9515c", barrel: "#6f2731" }
     ];
+    const maxForwardSpeed = 190;
+    const maxReverseSpeed = 115;
+    const acceleration = 520;
+    const braking = 780;
+    const friction = 5.2;
+    const turnSpeed = 3.4;
+    const recoilStrength = 18;
 
     function createTank(x, y, camo, angle) {
       return {
-        x, y, w: 38, h: 26, angle, speed: 170, accel: 700, drag: 5.5, turnRate: 8.5, vx: 0, vy: 0, camo, hp: 3, fireCd: 0,
+        x, y, w: 38, h: 26, angle, driveSpeed: 0, angularVelocity: 0, camo, hp: 3, fireCd: 0,
         aiState: "approach",
         aiDecisionTimer: 0,
-        aiStrafeDir: 1
+        aiStrafeDir: 1,
+        aiBias: 0,
+        aiLastX: x,
+        aiLastY: y,
+        aiStuckTimer: 0
       };
     }
     function baseWalls() {
@@ -313,6 +325,7 @@
       if (!gameStarted || tank.fireCd > 0 || gameOver) return;
       tank.fireCd = 0.45;
       bullets.push({ x: tank.x + Math.cos(tank.angle) * 24, y: tank.y + Math.sin(tank.angle) * 24, vx: Math.cos(tank.angle) * 380, vy: Math.sin(tank.angle) * 380, r: 4, owner });
+      tank.driveSpeed -= recoilStrength;
     }
     function damageTank(tank, by) {
       tank.hp -= 1;
@@ -323,33 +336,73 @@
       }
     }
 
-    function updatePlayer(dt) {
-      let dx = 0, dy = 0;
-      if (keys.has("KeyW")) dy -= 1;
-      if (keys.has("KeyS")) dy += 1;
-      if (keys.has("KeyA")) dx -= 1;
-      if (keys.has("KeyD")) dx += 1;
-      if (dx !== 0 || dy !== 0) {
-        const len = Math.hypot(dx, dy);
-        dx /= len; dy /= len;
-        const targetVx = dx * player.speed;
-        const targetVy = dy * player.speed;
-        const accelStep = player.accel * dt;
-        player.vx += clamp(targetVx - player.vx, -accelStep, accelStep);
-        player.vy += clamp(targetVy - player.vy, -accelStep, accelStep);
-      } else {
-        const slow = Math.exp(-player.drag * dt);
-        player.vx *= slow;
-        player.vy *= slow;
+    function normalizeAngleDiff(from, to) {
+      return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+    }
+
+    function moveTankWithSlide(tank, dt) {
+      const vx = Math.cos(tank.angle) * tank.driveSpeed;
+      const vy = Math.sin(tank.angle) * tank.driveSpeed;
+      const nx = tank.x + vx * dt;
+      const ny = tank.y + vy * dt;
+
+      if (canMoveTo(tank, nx, ny)) {
+        tank.x = nx;
+        tank.y = ny;
+        return;
       }
-      const nx = player.x + player.vx * dt;
-      const ny = player.y + player.vy * dt;
-      if (canMoveTo(player, nx, player.y)) player.x = nx; else player.vx = 0;
-      if (canMoveTo(player, player.x, ny)) player.y = ny; else player.vy = 0;
-      const moveMag = Math.hypot(player.vx, player.vy);
-      if (moveMag > 6) player.angle = approachAngle(player.angle, Math.atan2(player.vy, player.vx), player.turnRate * dt);
-      if (hasMouse) player.angle = approachAngle(player.angle, Math.atan2(mouseY - player.y, mouseX - player.x), player.turnRate * dt * 1.2);
-      player.fireCd = Math.max(0, player.fireCd - dt);
+
+      let moved = false;
+      if (canMoveTo(tank, nx, tank.y)) {
+        tank.x = nx;
+        moved = true;
+      }
+      if (canMoveTo(tank, tank.x, ny)) {
+        tank.y = ny;
+        moved = true;
+      }
+      if (moved) {
+        tank.driveSpeed *= 0.76;
+      } else {
+        tank.driveSpeed *= 0.2;
+      }
+    }
+
+    function updateTankDrive(tank, dt, throttleInput, turnInput) {
+      const targetSpeed = throttleInput >= 0 ? throttleInput * maxForwardSpeed : throttleInput * maxReverseSpeed;
+      const changingDirection = Math.sign(targetSpeed) !== Math.sign(tank.driveSpeed) && Math.abs(tank.driveSpeed) > 4 && Math.abs(targetSpeed) > 0;
+      const accelRate = changingDirection ? braking : acceleration;
+
+      if (Math.abs(targetSpeed) > 0.01) {
+        tank.driveSpeed += clamp(targetSpeed - tank.driveSpeed, -accelRate * dt, accelRate * dt);
+      } else {
+        const stopMul = Math.exp(-friction * dt);
+        tank.driveSpeed *= stopMul;
+        if (Math.abs(tank.driveSpeed) < 1.5) tank.driveSpeed = 0;
+      }
+
+      const speedRatio = Math.min(Math.abs(tank.driveSpeed) / maxForwardSpeed, 1);
+      const turnGrip = 1 - speedRatio * 0.4;
+      const targetAngular = turnInput * turnSpeed * turnGrip;
+      tank.angularVelocity += clamp(targetAngular - tank.angularVelocity, -14 * dt, 14 * dt);
+      tank.angularVelocity *= Math.exp(-7 * dt);
+      tank.angle += tank.angularVelocity * dt;
+
+      moveTankWithSlide(tank, dt);
+      tank.fireCd = Math.max(0, tank.fireCd - dt);
+    }
+
+    function updatePlayer(dt) {
+      const throttleInput = (keys.has("KeyW") ? 1 : 0) + (keys.has("KeyS") ? -1 : 0);
+      const turnInput = (keys.has("KeyD") ? 1 : 0) + (keys.has("KeyA") ? -1 : 0);
+      updateTankDrive(player, dt, throttleInput, turnInput);
+
+      // Keep mouse aim responsive while preserving tank-like turning limits.
+      if (hasMouse) {
+        const aimAngle = Math.atan2(mouseY - player.y, mouseX - player.x);
+        const align = normalizeAngleDiff(player.angle, aimAngle);
+        player.angularVelocity += clamp(align * 3.1, -3.5, 3.5) * dt;
+      }
     }
 
     function updateEnemy(dt) {
@@ -357,55 +410,50 @@
       const toY = player.y - enemy.y;
       const dist = Math.hypot(toX, toY);
 
-      const desiredAngle = Math.atan2(toY, toX);
-      enemy.angle = approachAngle(enemy.angle, desiredAngle, enemy.turnRate * dt * 0.9);
+      let desiredAngle = Math.atan2(toY, toX);
 
       // Re-evaluate behavior every short interval to avoid frame-by-frame twitching.
       enemy.aiDecisionTimer -= dt;
       if (enemy.aiDecisionTimer <= 0) {
-        if (dist > 300) enemy.aiState = "approach";
-        else if (dist < 135) enemy.aiState = "retreat";
+        if (dist > 285) enemy.aiState = "approach";
+        else if (dist < 115) enemy.aiState = "retreat";
         else enemy.aiState = "fight";
-
-        enemy.aiDecisionTimer = 0.35 + Math.random() * 0.55;
-        if (Math.random() < 0.35) enemy.aiStrafeDir *= -1;
+        enemy.aiDecisionTimer = 0.5;
+        if (Math.random() < 0.12) enemy.aiStrafeDir *= -1;
       }
 
-      let moveX = 0;
-      let moveY = 0;
+      let throttleInput = 0;
       if (enemy.aiState === "approach") {
-        moveX = Math.cos(desiredAngle);
-        moveY = Math.sin(desiredAngle);
+        throttleInput = 1;
       } else if (enemy.aiState === "retreat") {
-        moveX = -Math.cos(desiredAngle);
-        moveY = -Math.sin(desiredAngle);
-        if (Math.random() < 0.2) {
-          moveX += Math.cos(desiredAngle + enemy.aiStrafeDir * Math.PI / 2) * 0.45;
-          moveY += Math.sin(desiredAngle + enemy.aiStrafeDir * Math.PI / 2) * 0.45;
-        }
+        desiredAngle += enemy.aiStrafeDir * 0.25;
+        throttleInput = -0.35;
       } else {
-        // fight: orbit and occasionally step in/out for less predictable movement
-        const orbitAngle = desiredAngle + enemy.aiStrafeDir * Math.PI / 2;
-        moveX = Math.cos(orbitAngle) * 0.85 + Math.cos(desiredAngle) * ((Math.random() - 0.5) * 0.55);
-        moveY = Math.sin(orbitAngle) * 0.85 + Math.sin(desiredAngle) * ((Math.random() - 0.5) * 0.55);
+        desiredAngle += enemy.aiStrafeDir * 0.28;
+        throttleInput = dist < 170 ? 0.55 : 0.9;
       }
 
-      const mLen = Math.hypot(moveX, moveY) || 1;
-      moveX /= mLen;
-      moveY /= mLen;
+      const angleDiff = normalizeAngleDiff(enemy.angle, desiredAngle);
+      const turnInput = clamp(angleDiff / 1.05, -1, 1);
+      if (Math.abs(angleDiff) > 1.35) throttleInput *= 0.8;
+      updateTankDrive(enemy, dt, throttleInput, turnInput);
 
-      const nx = enemy.x + moveX * enemy.speed * 0.78 * dt;
-      const ny = enemy.y + moveY * enemy.speed * 0.75 * dt;
-      if (canMoveTo(enemy, nx, enemy.y)) enemy.x = nx;
-      if (canMoveTo(enemy, enemy.x, ny)) enemy.y = ny;
-
-      enemy.fireCd = Math.max(0, enemy.fireCd - dt);
+      const moved = Math.hypot(enemy.x - enemy.aiLastX, enemy.y - enemy.aiLastY);
+      enemy.aiLastX = enemy.x;
+      enemy.aiLastY = enemy.y;
+      if (Math.abs(throttleInput) > 0.4 && moved < 0.35) enemy.aiStuckTimer += dt;
+      else enemy.aiStuckTimer = Math.max(0, enemy.aiStuckTimer - dt * 2);
+      if (enemy.aiStuckTimer > 0.55) {
+        enemy.aiStrafeDir *= -1;
+        enemy.aiState = "approach";
+        enemy.aiDecisionTimer = 0.35;
+        enemy.aiStuckTimer = 0;
+      }
 
       // Fire only when roughly aimed at player.
-      const aimError = Math.abs(Math.atan2(Math.sin(desiredAngle - enemy.angle), Math.cos(desiredAngle - enemy.angle)));
-      const aimedEnough = aimError < 0.4;
-      const shootChance = enemy.aiState === "fight" ? 1.8 : 1.0;
-      if (dist < 430 && aimedEnough && Math.random() < shootChance * dt) {
+      const aimError = Math.abs(normalizeAngleDiff(enemy.angle, Math.atan2(toY, toX)));
+      const aimedEnough = aimError < 0.68;
+      if (dist < 430 && aimedEnough && enemy.fireCd <= 0) {
         shoot(enemy, "enemy");
       }
     }
@@ -440,7 +488,8 @@
     function drawTank(tank) {
       ctx.save();
       ctx.translate(tank.x, tank.y);
-      ctx.rotate(tank.angle);
+      const bodyLean = clamp((tank.angularVelocity || 0) * 0.09 + (tank.driveSpeed || 0) * 0.0008, -0.08, 0.08);
+      ctx.rotate(tank.angle + bodyLean);
       ctx.fillStyle = tank.camo.body;
       ctx.fillRect(-tank.w / 2, -tank.h / 2, tank.w, tank.h);
       ctx.fillStyle = tank.camo.stripe;
@@ -570,24 +619,38 @@
       shootQueued = false;
     }
 
-    function connectOnline() {
-      setMode("online");
+    function resetOnlineSessionState() {
       gameOver = false;
       gameStarted = false;
       winner = "";
-      if (onlineSocket) onlineSocket.close();
-      modeMetaEl.textContent = "Connecting to server...";
-      onlineSocket = new WebSocket(ONLINE_SERVER_URL);
+      onlineState = null;
+      myId = null;
+      shootQueued = false;
+    }
 
-      onlineSocket.onopen = () => {
+    function createOnlineSocket() {
+      modeMetaEl.textContent = "Connecting to server...";
+      const socket = new WebSocket(ONLINE_SERVER_URL);
+      socket._expectedClose = false;
+      socket._hadError = false;
+      socket._opened = false;
+      onlineSocket = socket;
+
+      socket.onopen = () => {
+        if (onlineSocket !== socket) return;
+        socket._opened = true;
         modeMetaEl.textContent = "Connected. Waiting for second player.";
-        onlineSocket.send(JSON.stringify({ type: "join", nickname: formatNickname(nicknameInput.value, "PLAYER") }));
+        socket.send(JSON.stringify({ type: "join", nickname: formatNickname(nicknameInput.value, "PLAYER") }));
       };
-      onlineSocket.onmessage = (ev) => {
+
+      socket.onmessage = (ev) => {
+        if (onlineSocket !== socket) return;
         const msg = JSON.parse(ev.data);
         if (msg.type === "welcome") myId = msg.playerId;
         if (msg.type === "queue") {
           gameStarted = false;
+          gameOver = false;
+          winner = "";
           statusEl.textContent = "Waiting for second player...";
         }
         if (msg.type === "start") {
@@ -606,13 +669,48 @@
           statusEl.textContent = winner;
         }
       };
-      onlineSocket.onclose = () => {
-        if (mode === "online") {
-          gameStarted = false;
+
+      socket.onerror = () => {
+        socket._hadError = true;
+      };
+
+      socket.onclose = () => {
+        if (onlineSocket && onlineSocket !== socket) return;
+        if (onlineSocket === socket) onlineSocket = null;
+
+        if (socket._expectedClose && reconnectAfterClose) {
+          reconnectAfterClose = false;
+          createOnlineSocket();
+          return;
+        }
+
+        if (mode !== "online") return;
+        gameStarted = false;
+
+        // Distinguish real outage from normal/intentional close.
+        if (socket._hadError) {
           statusEl.textContent = "Server disconnected";
           modeMetaEl.textContent = "Server unavailable. Run: node server.js";
+        } else {
+          statusEl.textContent = "Disconnected. Press Play Online";
+          modeMetaEl.textContent = "Connection closed. Ready to reconnect.";
         }
       };
+    }
+
+    function connectOnline() {
+      setMode("online");
+      resetOnlineSessionState();
+      reconnectAfterClose = false;
+
+      if (onlineSocket && (onlineSocket.readyState === WebSocket.OPEN || onlineSocket.readyState === WebSocket.CONNECTING || onlineSocket.readyState === WebSocket.CLOSING)) {
+        reconnectAfterClose = true;
+        onlineSocket._expectedClose = true;
+        onlineSocket.close();
+        return;
+      }
+
+      createOnlineSocket();
     }
 
     function tick(ts) {
@@ -641,7 +739,12 @@
     window.addEventListener("keyup", (e) => keys.delete(e.code));
 
     playAiBtn.addEventListener("click", () => {
-      if (onlineSocket) { onlineSocket.close(); onlineSocket = null; }
+      reconnectAfterClose = false;
+      if (onlineSocket) {
+        onlineSocket._expectedClose = true;
+        onlineSocket.close();
+        onlineSocket = null;
+      }
       setMode("ai");
       startAiGame();
       canvas.focus();
