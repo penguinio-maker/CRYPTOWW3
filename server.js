@@ -116,12 +116,15 @@ function updateTank(id, dt) {
 
 function endMatch(winnerId) {
   broadcast({ type: "end", winnerId });
-  resetMatch();
+  // Stop auto-rematch: finish the current match and require explicit rejoin.
+  const closingSockets = [clients.player0, clients.player1].filter(Boolean);
+  for (const ws of closingSockets) ws._closingForMatchEnd = true;
   setTimeout(() => {
-    if (bothConnected()) {
-      broadcast({ type: "start", state: { ...state, nicknames: [nicknames.player0, nicknames.player1] } });
+    for (const ws of closingSockets) {
+      if (ws.readyState === 1) ws.close(1000, "match-ended");
     }
-  }, 1200);
+    resetMatch();
+  }, 120);
 }
 
 function updateBullets(dt) {
@@ -231,7 +234,7 @@ wss.on("connection", (ws) => {
     if (myId === "player0") nicknames.player0 = "P1";
     if (myId === "player1") nicknames.player1 = "P2";
     inputs[myId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
-    queueNotice();
+    if (!ws._closingForMatchEnd) queueNotice();
   });
 });
 
