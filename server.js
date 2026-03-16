@@ -1,4 +1,5 @@
-﻿const { WebSocketServer } = require("ws");
+﻿const http = require("http");
+const { WebSocketServer } = require("ws");
 
 const PORT = Number(process.env.PORT) || 3000;
 const TICK_MS = 33;
@@ -165,8 +166,20 @@ function updateBullets(dt) {
   }
 }
 
-const wss = new WebSocketServer({ port: PORT });
-console.log(`Tank online server on ws://localhost:${PORT}`);
+const httpServer = http.createServer((req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Server is running");
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end("Not found");
+});
+
+const wss = new WebSocketServer({ server: httpServer });
 
 wss.on("connection", (ws) => {
   let myId = null;
@@ -217,6 +230,7 @@ wss.on("connection", (ws) => {
     clients[myId] = null;
     if (myId === "player0") nicknames.player0 = "P1";
     if (myId === "player1") nicknames.player1 = "P2";
+    inputs[myId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
     queueNotice();
   });
 });
@@ -229,3 +243,7 @@ setInterval(() => {
   updateBullets(TICK_MS / 1000);
   broadcast({ type: "state", state: { ...state, nicknames: [nicknames.player0, nicknames.player1] } });
 }, TICK_MS);
+
+httpServer.listen(PORT, () => {
+  console.log(`Tank server listening on port ${PORT}`);
+});
