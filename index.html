@@ -131,11 +131,12 @@
       text-align: left;
     }
     .my-lobby-card {
-      border: 1px solid #395c74;
-      background: rgba(11, 24, 37, 0.7);
+      border: 1px solid #8ea0af;
+      background: rgba(20, 33, 45, 0.72);
       border-radius: 10px;
-      padding: 10px;
+      padding: 12px;
       text-align: left;
+      margin-bottom: 10px;
     }
     .lobby-list {
       border: 1px solid #2f4b62;
@@ -147,16 +148,34 @@
     .lobby-item {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
-      padding: 9px 10px;
-      border: 1px solid #2f4b62;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      background: rgba(18, 33, 46, 0.55);
+      padding: 12px;
+      border: 1px solid #8ea0af;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: rgba(20, 33, 45, 0.72);
       text-align: left;
     }
     .lobby-item:last-child { margin-bottom: 0; }
+    .lobby-item-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #e8f2ff;
+      margin-bottom: 4px;
+      letter-spacing: 0.2px;
+    }
+    .lobby-item-line {
+      font-size: 12px;
+      color: #bfd5e5;
+      line-height: 1.35;
+    }
+    .lobby-join-btn {
+      width: 96px;
+      height: 34px;
+      justify-self: end;
+      align-self: center;
+    }
     .lobby-empty {
       padding: 18px;
       border: 1px dashed #4b667a;
@@ -552,6 +571,8 @@
     let lobbyList = [];
     let myLobbyState = null;
     let pendingJoinLobbyCode = "";
+    let createLobbyPending = false;
+    let createLobbyTimeoutId = null;
     let audioCtx = null;
     let currentMusicTrack = null;
     let currentMusicMode = "none";
@@ -1351,6 +1372,7 @@
     }
 
     function resetOnlineSessionState() {
+      finishCreateLobbyRequest(false);
       gameOver = false;
       gameStarted = false;
       winner = "";
@@ -1394,6 +1416,7 @@
       hideJoinPasswordForm();
       createLobbyNameInput.value = "";
       createLobbyPasswordInput.value = "";
+      createLobbySubmitBtn.disabled = false;
       setCreateLobbyNameError("");
       createLobbyFormLayerEl.classList.remove("hidden");
       createLobbyNameInput.focus();
@@ -1409,6 +1432,30 @@
       createLobbyNameErrorEl.textContent = text || "";
     }
 
+    function finishCreateLobbyRequest(success, errorMessage = "") {
+      if (createLobbyTimeoutId) {
+        clearTimeout(createLobbyTimeoutId);
+        createLobbyTimeoutId = null;
+      }
+      createLobbyPending = false;
+      createLobbySubmitBtn.disabled = false;
+      if (success) {
+        setCreateLobbyNameError("");
+        return;
+      }
+      if (errorMessage) setLobbyMeta(errorMessage);
+    }
+
+    function startCreateLobbyRequest() {
+      createLobbyPending = true;
+      createLobbySubmitBtn.disabled = true;
+      setLobbyMeta("Creating lobby...");
+      if (createLobbyTimeoutId) clearTimeout(createLobbyTimeoutId);
+      createLobbyTimeoutId = setTimeout(() => {
+        finishCreateLobbyRequest(false, "Lobby creation timed out. Please try again.");
+      }, 7000);
+    }
+
     function submitCreateLobby() {
       const lobbyName = (createLobbyNameInput.value || "").trim();
       const password = (createLobbyPasswordInput.value || "").trim();
@@ -1417,8 +1464,9 @@
         createLobbyNameInput.focus();
         return;
       }
+      if (createLobbyPending) return;
       setCreateLobbyNameError("");
-      setLobbyMeta("Creating lobby...");
+      startCreateLobbyRequest();
       connectOnline({ type: "create_lobby", lobbyName, password }, false);
     }
 
@@ -1480,15 +1528,18 @@
       if (myLobbyState) {
         myLobbyCardEl.classList.remove("hidden");
         const title = document.createElement("div");
-        title.style.fontWeight = "800";
-        title.style.marginBottom = "6px";
-        title.textContent = `${myLobbyState.lobbyName || "Lobby"} (${myLobbyState.code})`;
+        title.className = "lobby-item-title";
+        title.textContent = `${myLobbyState.lobbyName || "Lobby"}`;
+        const creator = document.createElement("div");
+        creator.className = "lobby-item-line";
+        creator.textContent = `Creator: ${myLobbyState.creatorNickname}`;
         const players = document.createElement("div");
-        players.style.fontSize = "13px";
+        players.className = "lobby-item-line";
         players.style.marginBottom = "8px";
         const guestNick = myLobbyState.joinedNickname || "Waiting for player...";
-        players.textContent = `Creator: ${myLobbyState.creatorNickname} | Player 2: ${guestNick}`;
-        myLobbyCardEl.append(title, players);
+        const count = myLobbyState.joinedNickname ? 2 : 1;
+        players.textContent = `Players: ${count}/2 (${guestNick})`;
+        myLobbyCardEl.append(title, creator, players);
 
         const actions = document.createElement("div");
         actions.style.display = "flex";
@@ -1521,7 +1572,17 @@
       }
 
       lobbiesListEl.innerHTML = "";
-      if (!Array.isArray(lobbyList) || lobbyList.length === 0) {
+      const visibleLobbies = Array.isArray(lobbyList)
+        ? lobbyList.filter((lobby) => !(myLobbyState && myLobbyState.code === lobby.code))
+        : [];
+
+      if (visibleLobbies.length === 0 && myLobbyState) {
+        lobbiesListEl.classList.add("hidden");
+        return;
+      }
+
+      lobbiesListEl.classList.remove("hidden");
+      if (visibleLobbies.length === 0) {
         const empty = document.createElement("div");
         empty.className = "lobby-empty";
         empty.textContent = "No lobbies yet";
@@ -1529,35 +1590,31 @@
         return;
       }
 
-      for (const lobby of lobbyList) {
+      for (const lobby of visibleLobbies) {
         const row = document.createElement("div");
         row.className = "lobby-item";
 
         const info = document.createElement("div");
         const name = document.createElement("div");
-        name.style.fontWeight = "700";
+        name.className = "lobby-item-title";
         const lockMark = lobby.hasPassword ? " \uD83D\uDD12" : "";
         name.textContent = `${lobby.lobbyName || "Lobby"}${lockMark}`;
+        const creator = document.createElement("div");
+        creator.className = "lobby-item-line";
+        creator.textContent = `Creator: ${lobby.creatorNickname}`;
         const members = document.createElement("div");
-        members.style.fontSize = "12px";
-        members.style.color = "#b9d8ea";
+        members.className = "lobby-item-line";
         const second = lobby.joinedNickname || "Waiting for player...";
-        members.textContent = `Code: ${lobby.code} | Creator: ${lobby.creatorNickname} | ${second}`;
-        info.append(name, members);
+        members.textContent = `Players: ${lobby.playerCount}/2 (${second})`;
+        info.append(name, creator, members);
 
         const joinBtn = document.createElement("button");
         joinBtn.type = "button";
-        joinBtn.className = "main-action-btn";
-        joinBtn.style.height = "34px";
-        joinBtn.style.width = "92px";
+        joinBtn.className = "main-action-btn lobby-join-btn";
         joinBtn.textContent = "Join";
 
-        const isMine = !!myLobbyState && myLobbyState.code === lobby.code;
         const isFull = lobby.playerCount >= 2;
-        if (isMine) {
-          joinBtn.disabled = true;
-          joinBtn.textContent = "Inside";
-        } else if (isFull) {
+        if (isFull) {
           joinBtn.disabled = true;
           joinBtn.textContent = "Full";
         } else if (myLobbyState) {
@@ -1606,6 +1663,7 @@
           activeLobbyCode = myLobbyState?.code || "";
           onlineSearchActive = !!myLobbyState;
           if (myLobbyState) {
+            if (createLobbyPending) finishCreateLobbyRequest(true);
             hideCreateLobbyForm();
             hideJoinPasswordForm();
             cancelSearchBtn.classList.remove("hidden");
@@ -1629,6 +1687,7 @@
           modeMetaEl.textContent = msg.message || "Searching for player...";
         }
         if (msg.type === "lobby_created") {
+          finishCreateLobbyRequest(true);
           hideCreateLobbyForm();
           onlineSearchActive = true;
           activeLobbyCode = msg.code || "";
@@ -1650,6 +1709,7 @@
           setLobbyMeta(msg.message || "Waiting for player...");
         }
         if (msg.type === "cancelled") {
+          finishCreateLobbyRequest(false, msg.message || "Lobby creation cancelled.");
           onlineSearchActive = false;
           activeLobbyCode = "";
           myLobbyState = null;
@@ -1660,6 +1720,7 @@
           renderLobbiesUi();
         }
         if (msg.type === "error") {
+          finishCreateLobbyRequest(false, msg.message || "Unable to create lobby.");
           onlineSearchActive = false;
           cancelSearchBtn.classList.add("hidden");
           statusEl.textContent = msg.message || "Online error";
@@ -1708,6 +1769,7 @@
       socket.onclose = () => {
         if (onlineSocket && onlineSocket !== socket) return;
         if (onlineSocket === socket) onlineSocket = null;
+        if (createLobbyPending) finishCreateLobbyRequest(false, "Unable to create lobby. Server disconnected.");
         onlineSearchActive = false;
         myLobbyState = null;
         activeLobbyCode = "";
