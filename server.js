@@ -12,6 +12,7 @@ const acceleration = 520;
 const braking = 780;
 const friction = 5.2;
 const turnSpeed = 3.4;
+const turretTurnSpeed = 6.4;
 const recoilStrength = 18;
 const LOBBY_MODE_LIMITS = {
   "1v1": 2,
@@ -45,8 +46,8 @@ function baseWalls() {
   ];
 }
 
-function createTank(x, y, angle) {
-  return { x, y, w: 38, h: 26, angle, hp: 3, driveSpeed: 0, angularVelocity: 0, fireCd: 0 };
+function createTank(x, y, angle, camoId = "classic") {
+  return { x, y, w: 38, h: 26, angle, turretAngle: angle, hp: 3, driveSpeed: 0, angularVelocity: 0, fireCd: 0, camoId };
 }
 
 function normalizeNickname(name, fallback) {
@@ -75,7 +76,7 @@ function normalizeCamo(camo) {
 
 function resetArena() {
   state = {
-    players: [createTank(120, 270, 0), createTank(840, 270, Math.PI)],
+    players: [createTank(120, 270, 0, camos.player0), createTank(840, 270, Math.PI, camos.player1)],
     walls: baseWalls(),
     bullets: []
   };
@@ -278,6 +279,8 @@ function startMatch(ws0, ws1, nick0, nick1, camo0, camo1) {
   ws1._closingForMatchEnd = false;
 
   resetArena();
+  state.players[0].camoId = camos.player0;
+  state.players[1].camoId = camos.player1;
   resetMatchState();
   send(ws0, { type: "welcome", playerId: "player0" });
   send(ws1, { type: "welcome", playerId: "player1" });
@@ -531,17 +534,19 @@ function updateTank(playerId, dt) {
   const turnInput = (inp.right ? 1 : 0) + (inp.left ? -1 : 0);
   updateTankDrive(tank, dt, throttleInput, turnInput);
 
-  const aimAngle = Math.atan2(inp.aimY - tank.y, inp.aimX - tank.x);
-  const align = normalizeAngleDiff(tank.angle, aimAngle);
-  tank.angularVelocity += clamp(align * 3.1, -3.5, 3.5) * dt;
+  const targetTurretAngle = Math.atan2(inp.aimY - tank.y, inp.aimX - tank.x);
+  const turretDiff = normalizeAngleDiff(tank.turretAngle ?? tank.angle, targetTurretAngle);
+  const turretStep = clamp(turretDiff, -turretTurnSpeed * dt, turretTurnSpeed * dt);
+  tank.turretAngle = (tank.turretAngle ?? tank.angle) + turretStep;
 
   if (inp.shoot && tank.fireCd <= 0) {
+    const fireAngle = tank.turretAngle ?? tank.angle;
     tank.fireCd = 0.45;
     state.bullets.push({
-      x: tank.x + Math.cos(tank.angle) * 24,
-      y: tank.y + Math.sin(tank.angle) * 24,
-      vx: Math.cos(tank.angle) * 380,
-      vy: Math.sin(tank.angle) * 380,
+      x: tank.x + Math.cos(fireAngle) * 24,
+      y: tank.y + Math.sin(fireAngle) * 24,
+      vx: Math.cos(fireAngle) * 380,
+      vy: Math.sin(fireAngle) * 380,
       r: 4,
       owner: playerId
     });
