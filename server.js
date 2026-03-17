@@ -13,9 +13,16 @@ const braking = 780;
 const friction = 5.2;
 const turnSpeed = 3.4;
 const recoilStrength = 18;
+const LOBBY_MODE_LIMITS = {
+  "1v1": 2,
+  "2v2": 4,
+  "3v3": 6,
+  "4v4": 8
+};
 
 const clients = { player0: null, player1: null };
 const nicknames = { player0: "P1", player1: "P2" };
+const camos = { player0: "classic", player1: "classic" };
 const inputs = {
   player0: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false },
   player1: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false }
@@ -56,6 +63,16 @@ function normalizeLobbyPassword(password) {
   return (typeof password === "string" ? password : "").trim().slice(0, 24);
 }
 
+function normalizeLobbyMode(mode) {
+  const value = typeof mode === "string" ? mode.trim() : "";
+  return LOBBY_MODE_LIMITS[value] ? value : "1v1";
+}
+
+function normalizeCamo(camo) {
+  const value = typeof camo === "string" ? camo.trim() : "";
+  return value || "classic";
+}
+
 function resetArena() {
   state = {
     players: [createTank(120, 270, 0), createTank(840, 270, Math.PI)],
@@ -82,6 +99,7 @@ function makePublicState() {
   return {
     ...state,
     nicknames: [nicknames.player0, nicknames.player1],
+    camos: [camos.player0, camos.player1],
     match: {
       totalRounds,
       roundTime,
@@ -115,6 +133,7 @@ function arenaBusy() {
 function clearPlayerSlot(playerId) {
   clients[playerId] = null;
   nicknames[playerId] = playerId === "player0" ? "P1" : "P2";
+  camos[playerId] = "classic";
   inputs[playerId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
 }
 
@@ -123,13 +142,25 @@ function removeFromRandomQueue(ws) {
   if (idx >= 0) waitingRandom.splice(idx, 1);
 }
 
+function getLobbyMemberNames(lobby) {
+  return (lobby.members || []).map((member) => member.nickname);
+}
+
+function getLobbyMemberCamos(lobby) {
+  return (lobby.members || []).map((member) => member.camo);
+}
+
 function lobbyPublicView(lobby) {
   return {
     code: lobby.code,
     lobbyName: lobby.lobbyName,
     creatorNickname: lobby.hostNick,
-    joinedNickname: lobby.guestNick || "",
-    playerCount: lobby.guest ? 2 : 1,
+    joinedNickname: getLobbyMemberNames(lobby)[1] || "",
+    memberNicknames: getLobbyMemberNames(lobby),
+    memberCamos: getLobbyMemberCamos(lobby),
+    playerCount: (lobby.members || []).length,
+    mode: lobby.mode,
+    maxPlayers: lobby.maxPlayers,
     hasPassword: !!lobby.password
   };
 }
@@ -170,9 +201,14 @@ function sendLobbyState(ws) {
       code: lobby.code,
       lobbyName: lobby.lobbyName,
       creatorNickname: lobby.hostNick,
-      joinedNickname: lobby.guestNick || "",
+      joinedNickname: getLobbyMemberNames(lobby)[1] || "",
+      memberNicknames: getLobbyMemberNames(lobby),
+      memberCamos: getLobbyMemberCamos(lobby),
+      playerCount: (lobby.members || []).length,
+      mode: lobby.mode,
+      maxPlayers: lobby.maxPlayers,
       isCreator: lobby.host === ws,
-      canStart: lobby.host === ws && !!lobby.guest,
+      canStart: lobby.host === ws && (lobby.members || []).length >= lobby.maxPlayers,
       hasPassword: !!lobby.password
     }
   });
@@ -180,17 +216,17 @@ function sendLobbyState(ws) {
 
 function refreshLobbyState(lobby) {
   if (!lobby) return;
-  sendLobbyState(lobby.host);
-  if (lobby.guest) sendLobbyState(lobby.guest);
+  for (const member of lobby.members || []) sendLobbyState(member.ws);
 }
 
 function removeFromLobbies(ws, notify = true) {
   for (const [code, lobby] of lobbies.entries()) {
     if (lobby.host === ws) {
-      if (lobby.guest) {
-        lobby.guest._lobbyCode = null;
-        if (notify) send(lobby.guest, { type: "error", message: "Lobby closed by host" });
-        sendLobbyState(lobby.guest);
+      for (const member of lobby.members || []) {
+        if (member.ws === ws) continue;
+        member.ws._lobbyCode = null;
+        if (notify) send(member.ws, { type: "error", message: "Lobby closed by host" });
+        sendLobbyState(member.ws);
       }
       lobbies.delete(code);
       ws._lobbyCode = null;
@@ -198,11 +234,11 @@ function removeFromLobbies(ws, notify = true) {
       broadcastLobbyList();
       return true;
     }
-    if (lobby.guest === ws) {
-      lobby.guest = null;
-      lobby.guestNick = "";
+    const memberIndex = (lobby.members || []).findIndex((member) => member.ws === ws);
+    if (memberIndex >= 0) {
+      lobby.members.splice(memberIndex, 1);
       ws._lobbyCode = null;
-      if (notify) send(lobby.host, { type: "lobby_waiting", code, message: "Waiting for player..." });
+      if (notify) send(lobby.host, { type: "lobby_waiting", code, message: "Player left the lobby." });
       refreshLobbyState(lobby);
       sendLobbyState(ws);
       broadcastLobbyList();
@@ -227,12 +263,14 @@ function generateLobbyCode() {
   return `${Date.now().toString(36).slice(-5).toUpperCase()}`;
 }
 
-function startMatch(ws0, ws1, nick0, nick1) {
+function startMatch(ws0, ws1, nick0, nick1, camo0, camo1) {
   if (arenaBusy()) return false;
   clients.player0 = ws0;
   clients.player1 = ws1;
   nicknames.player0 = nick0;
   nicknames.player1 = nick1;
+  camos.player0 = normalizeCamo(camo0);
+  camos.player1 = normalizeCamo(camo1);
 
   ws0._playerId = "player0";
   ws1._playerId = "player1";
@@ -256,20 +294,29 @@ function tryStartPendingMatch() {
   if (waitingRandom.length >= 2) {
     const a = waitingRandom.shift();
     const b = waitingRandom.shift();
-    startMatch(a, b, normalizeNickname(a._nick, "P1"), normalizeNickname(b._nick, "P2"));
+    startMatch(
+      a,
+      b,
+      normalizeNickname(a._nick, "P1"),
+      normalizeNickname(b._nick, "P2"),
+      normalizeCamo(a._camo),
+      normalizeCamo(b._camo)
+    );
   }
 }
 
-function queueRandom(ws, nickname) {
+function queueRandom(ws, nickname, camoRaw) {
   ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
+  ws._camo = normalizeCamo(camoRaw || ws._camo);
   leavePending(ws, false);
   if (!waitingRandom.includes(ws)) waitingRandom.push(ws);
   send(ws, { type: "queue", message: "Searching for player..." });
   tryStartPendingMatch();
 }
 
-function createLobby(ws, nickname, lobbyNameRaw, passwordRaw) {
+function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw) {
   ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
+  ws._camo = normalizeCamo(camoRaw || ws._camo);
   const lobbyNameInput = (typeof lobbyNameRaw === "string" ? lobbyNameRaw : "").trim();
   if (!lobbyNameInput) {
     send(ws, { type: "error", message: "Lobby name is required." });
@@ -279,15 +326,26 @@ function createLobby(ws, nickname, lobbyNameRaw, passwordRaw) {
   const code = generateLobbyCode();
   const lobbyName = normalizeLobbyName(lobbyNameInput, `${ws._nick}'s Lobby`);
   const password = normalizeLobbyPassword(passwordRaw);
-  lobbies.set(code, { code, lobbyName, password, host: ws, hostNick: ws._nick, guest: null, guestNick: "" });
+  const mode = normalizeLobbyMode(modeRaw);
+  const maxPlayers = LOBBY_MODE_LIMITS[mode];
+  lobbies.set(code, {
+    code,
+    lobbyName,
+    password,
+    mode,
+    maxPlayers,
+    host: ws,
+    hostNick: ws._nick,
+    members: [{ ws, nickname: ws._nick, camo: ws._camo }]
+  });
   ws._lobbyCode = code;
-  send(ws, { type: "lobby_created", code, lobbyName, hasPassword: !!password });
-  send(ws, { type: "lobby_waiting", code, message: "Waiting for player..." });
+  send(ws, { type: "lobby_created", code, lobbyName, mode, maxPlayers, hasPassword: !!password });
+  send(ws, { type: "lobby_waiting", code, message: `Waiting for players (${1}/${maxPlayers})...` });
   sendLobbyState(ws);
   broadcastLobbyList();
 }
 
-function joinLobby(ws, codeRaw, nickname, passwordRaw) {
+function joinLobby(ws, codeRaw, nickname, passwordRaw, camoRaw) {
   const code = String(codeRaw || "").trim().toUpperCase();
   if (!code) {
     send(ws, { type: "error", message: "Enter lobby code" });
@@ -299,7 +357,7 @@ function joinLobby(ws, codeRaw, nickname, passwordRaw) {
     send(ws, { type: "error", message: "Lobby not found" });
     return;
   }
-  if (lobby.guest) {
+  if ((lobby.members || []).length >= lobby.maxPlayers) {
     send(ws, { type: "error", message: "Lobby is full" });
     return;
   }
@@ -319,14 +377,17 @@ function joinLobby(ws, codeRaw, nickname, passwordRaw) {
   }
 
   ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
+  ws._camo = normalizeCamo(camoRaw || ws._camo);
   leavePending(ws, false);
-
-  lobby.guest = ws;
-  lobby.guestNick = ws._nick;
   ws._lobbyCode = code;
+  lobby.members.push({ ws, nickname: ws._nick, camo: ws._camo });
 
-  send(ws, { type: "lobby_waiting", code, message: "Joined lobby. Waiting for start..." });
-  send(lobby.host, { type: "lobby_waiting", code, message: "Player joined. Creator can start game." });
+  const playerCount = lobby.members.length;
+  const lobbyMessage = playerCount >= lobby.maxPlayers
+    ? "Lobby is ready to start."
+    : `Waiting for players (${playerCount}/${lobby.maxPlayers})...`;
+  send(ws, { type: "lobby_waiting", code, message: lobbyMessage });
+  send(lobby.host, { type: "lobby_waiting", code, message: lobbyMessage });
   refreshLobbyState(lobby);
   broadcastLobbyList();
 }
@@ -351,8 +412,13 @@ function startLobbyGame(ws) {
     send(ws, { type: "error", message: "Only creator can start the game" });
     return;
   }
-  if (!lobby.guest || lobby.guest.readyState !== 1) {
-    send(ws, { type: "error", message: "Waiting for second player" });
+  if ((lobby.members || []).length < lobby.maxPlayers) {
+    send(ws, { type: "error", message: `Need ${lobby.maxPlayers} players to start ${lobby.mode}` });
+    refreshLobbyState(lobby);
+    return;
+  }
+  if (lobby.mode !== "1v1") {
+    send(ws, { type: "error", message: `${lobby.mode} battles are not available yet` });
     refreshLobbyState(lobby);
     return;
   }
@@ -362,10 +428,11 @@ function startLobbyGame(ws) {
   }
 
   lobbies.delete(code);
-  lobby.host._lobbyCode = null;
-  lobby.guest._lobbyCode = null;
+  const [hostMember, guestMember] = lobby.members;
+  hostMember.ws._lobbyCode = null;
+  guestMember.ws._lobbyCode = null;
   broadcastLobbyList();
-  startMatch(lobby.host, lobby.guest, lobby.hostNick, lobby.guestNick);
+  startMatch(hostMember.ws, guestMember.ws, hostMember.nickname, guestMember.nickname, hostMember.camo, guestMember.camo);
 }
 
 function cancelQueue(ws) {
@@ -609,12 +676,12 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.type === "join_random" || msg.type === "join") {
-      queueRandom(ws, msg.nickname);
+      queueRandom(ws, msg.nickname, msg.camo);
       return;
     }
 
     if (msg.type === "create_lobby") {
-      createLobby(ws, msg.nickname, msg.lobbyName, msg.password);
+      createLobby(ws, msg.nickname, msg.lobbyName, msg.password, msg.mode, msg.camo);
       return;
     }
 
@@ -625,7 +692,7 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.type === "join_lobby") {
-      joinLobby(ws, msg.code, msg.nickname, msg.password);
+      joinLobby(ws, msg.code, msg.nickname, msg.password, msg.camo);
       return;
     }
 

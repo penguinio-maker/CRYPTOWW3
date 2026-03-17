@@ -144,6 +144,23 @@
       background: rgba(6, 14, 22, 0.45);
       padding: 8px;
       overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #5f7385 #12202c;
+    }
+    .lobby-list::-webkit-scrollbar {
+      width: 10px;
+    }
+    .lobby-list::-webkit-scrollbar-track {
+      background: #12202c;
+      border-radius: 10px;
+    }
+    .lobby-list::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #617688, #445766);
+      border-radius: 10px;
+      border: 2px solid #12202c;
+    }
+    .lobby-list::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #73899b, #516675);
     }
     .lobby-item {
       display: grid;
@@ -169,6 +186,31 @@
       font-size: 12px;
       color: #bfd5e5;
       line-height: 1.35;
+    }
+    .lobby-code-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0 10px;
+      padding: 6px 10px;
+      border: 1px solid #8ea0af;
+      border-radius: 8px;
+      background: rgba(12, 23, 33, 0.82);
+      color: #e8f2ff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+      user-select: none;
+      width: fit-content;
+    }
+    .lobby-code-hint {
+      color: #9aaab7;
+      font-weight: 600;
+    }
+    .lobby-code-chip:hover {
+      border-color: #b3c0cb;
+      background: rgba(18, 31, 43, 0.95);
     }
     .lobby-join-btn {
       width: 96px;
@@ -475,6 +517,13 @@
           <label class="lobby-form-label" for="createLobbyPasswordInput">Password (optional)</label>
           <input id="createLobbyPasswordInput" class="lobby-input" type="password" maxlength="24" placeholder="Enter password (optional)" />
           <div class="lobby-help">Password is optional. Use it only if you want to make the lobby private.</div>
+          <label class="lobby-form-label" for="createLobbyModeInput">Game Mode</label>
+          <select id="createLobbyModeInput" class="lobby-input">
+            <option value="1v1" selected>1v1</option>
+            <option value="2v2">2v2</option>
+            <option value="3v3">3v3</option>
+            <option value="4v4">4v4</option>
+          </select>
           <div class="lobby-form-actions">
             <button id="createLobbyCancelBtn" class="secondary-btn" type="button">Cancel</button>
             <button id="createLobbySubmitBtn" class="main-action-btn" type="button" style="height:36px;width:112px;">Create</button>
@@ -533,6 +582,7 @@
     const createLobbyNameInput = document.getElementById("createLobbyNameInput");
     const createLobbyNameErrorEl = document.getElementById("createLobbyNameError");
     const createLobbyPasswordInput = document.getElementById("createLobbyPasswordInput");
+    const createLobbyModeInput = document.getElementById("createLobbyModeInput");
     const createLobbyCancelBtn = document.getElementById("createLobbyCancelBtn");
     const createLobbySubmitBtn = document.getElementById("createLobbySubmitBtn");
     const joinPasswordFormLayerEl = document.getElementById("joinPasswordFormLayer");
@@ -573,6 +623,8 @@
     let pendingJoinLobbyCode = "";
     let createLobbyPending = false;
     let createLobbyTimeoutId = null;
+    let pendingCreatedLobbyMode = "";
+    let pendingCreatedLobbyMaxPlayers = 0;
     let audioCtx = null;
     let currentMusicTrack = null;
     let currentMusicMode = "none";
@@ -590,10 +642,6 @@
       sunset: { body: "#7a4311", stripe: "#ffc870", turret: "#3b220c", barrel: "#231406" }
     };
     const ENEMY_CAMO = { body: "#7b3d43", stripe: "#ff9da2", turret: "#3a1b1f", barrel: "#261116" };
-    const ONLINE_COLORS = [
-      { body: "#5cc8ff", stripe: "#9ee5ff", turret: "#2f95c8", barrel: "#194c6a" },
-      { body: "#ff8a8a", stripe: "#ffc3c3", turret: "#c9515c", barrel: "#6f2731" }
-    ];
     const maxForwardSpeed = 190;
     const maxReverseSpeed = 115;
     const acceleration = 520;
@@ -603,6 +651,12 @@
     const recoilStrength = 18;
     const totalRounds = 3;
     const roundTime = 60;
+    const LOBBY_MODE_LIMITS = {
+      "1v1": 2,
+      "2v2": 4,
+      "3v3": 6,
+      "4v4": 8
+    };
 
     function createTank(x, y, camo, angle) {
       return {
@@ -1311,10 +1365,12 @@
       if (mode === "online" && onlineState) {
         const p0 = onlineState.players?.[0];
         const p1 = onlineState.players?.[1];
+        const p0Camo = CAMOS[onlineState.camos?.[0]] || CAMOS.classic;
+        const p1Camo = CAMOS[onlineState.camos?.[1]] || CAMOS.classic;
         drawWalls(onlineState.walls);
         drawBullets(onlineState.bullets);
-        if (p0) drawTank({ ...p0, camo: ONLINE_COLORS[0] });
-        if (p1) drawTank({ ...p1, camo: ONLINE_COLORS[1] });
+        if (p0) drawTank({ ...p0, camo: p0Camo });
+        if (p1) drawTank({ ...p1, camo: p1Camo });
         if (p0) {
           drawTankNickname(p0, formatNickname(onlineState.nicknames?.[0], "P1"));
           drawTankHpBar(p0, p0.hp);
@@ -1416,6 +1472,7 @@
       hideJoinPasswordForm();
       createLobbyNameInput.value = "";
       createLobbyPasswordInput.value = "";
+      createLobbyModeInput.value = "1v1";
       createLobbySubmitBtn.disabled = false;
       setCreateLobbyNameError("");
       createLobbyFormLayerEl.classList.remove("hidden");
@@ -1432,6 +1489,30 @@
       createLobbyNameErrorEl.textContent = text || "";
     }
 
+    function copyTextToClipboard(text) {
+      const value = String(text || "").trim();
+      if (!value) return Promise.resolve(false);
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(value).then(() => true).catch(() => false);
+      }
+
+      const temp = document.createElement("textarea");
+      temp.value = value;
+      temp.setAttribute("readonly", "");
+      temp.style.position = "absolute";
+      temp.style.left = "-9999px";
+      document.body.appendChild(temp);
+      temp.select();
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
+      document.body.removeChild(temp);
+      return Promise.resolve(ok);
+    }
+
     function finishCreateLobbyRequest(success, errorMessage = "") {
       if (createLobbyTimeoutId) {
         clearTimeout(createLobbyTimeoutId);
@@ -1443,6 +1524,8 @@
         setCreateLobbyNameError("");
         return;
       }
+      pendingCreatedLobbyMode = "";
+      pendingCreatedLobbyMaxPlayers = 0;
       if (errorMessage) setLobbyMeta(errorMessage);
     }
 
@@ -1459,6 +1542,7 @@
     function submitCreateLobby() {
       const lobbyName = (createLobbyNameInput.value || "").trim();
       const password = (createLobbyPasswordInput.value || "").trim();
+      const mode = createLobbyModeInput.value || "1v1";
       if (!lobbyName) {
         setCreateLobbyNameError("Lobby name is required.");
         createLobbyNameInput.focus();
@@ -1466,8 +1550,10 @@
       }
       if (createLobbyPending) return;
       setCreateLobbyNameError("");
+      pendingCreatedLobbyMode = mode;
+      pendingCreatedLobbyMaxPlayers = LOBBY_MODE_LIMITS[mode] || 2;
       startCreateLobbyRequest();
-      connectOnline({ type: "create_lobby", lobbyName, password }, false);
+      connectOnline({ type: "create_lobby", lobbyName, password, mode }, false);
     }
 
     function showJoinPasswordForm(code, lobbyName = "Lobby") {
@@ -1487,23 +1573,27 @@
     function sendOnlineAction(socket, action) {
       if (!socket || socket.readyState !== WebSocket.OPEN) return;
       const nickname = formatNickname(nicknameInput.value, "PLAYER");
+      const camo = selectedCamoId;
       if (action?.type === "create_lobby") {
-        modeMetaEl.textContent = "Creating lobby...";
+        modeMetaEl.textContent = "";
         socket.send(JSON.stringify({
           type: "create_lobby",
           nickname,
           lobbyName: action.lobbyName || "",
-          password: action.password || ""
+          password: action.password || "",
+          mode: action.mode || "1v1",
+          camo
         }));
         return;
       }
       if (action?.type === "join_lobby") {
-        modeMetaEl.textContent = "Joining lobby...";
+        modeMetaEl.textContent = "";
         socket.send(JSON.stringify({
           type: "join_lobby",
           code: action.code,
           nickname,
-          password: action.password || ""
+          password: action.password || "",
+          camo
         }));
         return;
       }
@@ -1519,27 +1609,56 @@
         socket.send(JSON.stringify({ type: "list_lobbies" }));
         return;
       }
-      modeMetaEl.textContent = "Searching for player...";
-      socket.send(JSON.stringify({ type: "join_random", nickname }));
+      modeMetaEl.textContent = "";
+      socket.send(JSON.stringify({ type: "join_random", nickname, camo }));
     }
 
     function renderLobbiesUi() {
-      myLobbyCardEl.innerHTML = "";
+      const orderedLobbies = Array.isArray(lobbyList) ? [...lobbyList] : [];
       if (myLobbyState) {
+        orderedLobbies.sort((a, b) => {
+          if (a.code === myLobbyState.code) return -1;
+          if (b.code === myLobbyState.code) return 1;
+          return 0;
+        });
+      }
+
+      const currentLobbyListEntry = myLobbyState
+        ? orderedLobbies.find((lobby) => lobby.code === myLobbyState.code)
+        : null;
+
+      const currentLobbyView = myLobbyState
+        ? { ...(currentLobbyListEntry || {}), ...myLobbyState }
+        : null;
+
+      myLobbyCardEl.innerHTML = "";
+      if (currentLobbyView) {
         myLobbyCardEl.classList.remove("hidden");
         const title = document.createElement("div");
         title.className = "lobby-item-title";
-        title.textContent = `${myLobbyState.lobbyName || "Lobby"}`;
+        title.textContent = `${currentLobbyView.lobbyName || "Lobby"}`;
         const creator = document.createElement("div");
         creator.className = "lobby-item-line";
-        creator.textContent = `Creator: ${myLobbyState.creatorNickname}`;
+        creator.textContent = `Creator: ${currentLobbyView.creatorNickname}`;
+        const mode = document.createElement("div");
+        mode.className = "lobby-item-line";
+        mode.textContent = `Mode: ${currentLobbyView.mode || "1v1"}`;
         const players = document.createElement("div");
         players.className = "lobby-item-line";
         players.style.marginBottom = "8px";
-        const guestNick = myLobbyState.joinedNickname || "Waiting for player...";
-        const count = myLobbyState.joinedNickname ? 2 : 1;
-        players.textContent = `Players: ${count}/2 (${guestNick})`;
-        myLobbyCardEl.append(title, creator, players);
+        const names = Array.isArray(currentLobbyView.memberNicknames) ? currentLobbyView.memberNicknames : [];
+        const membersText = names.length > 0 ? names.join(", ") : "Waiting for player...";
+        players.textContent = `Players: ${currentLobbyView.playerCount || names.length || 1}/${currentLobbyView.maxPlayers || 2} (${membersText})`;
+        const codeChip = document.createElement("button");
+        codeChip.type = "button";
+        codeChip.className = "lobby-code-chip";
+        codeChip.innerHTML = `Code: ${currentLobbyView.code} <span class="lobby-code-hint">(Click to copy)</span>`;
+        codeChip.addEventListener("click", () => {
+          copyTextToClipboard(currentLobbyView.code).then((ok) => {
+            setLobbyMeta(ok ? "Lobby code copied." : "Unable to copy lobby code.");
+          });
+        });
+        myLobbyCardEl.append(title, creator, mode, players, codeChip);
 
         const actions = document.createElement("div");
         actions.style.display = "flex";
@@ -1572,9 +1691,7 @@
       }
 
       lobbiesListEl.innerHTML = "";
-      const visibleLobbies = Array.isArray(lobbyList)
-        ? lobbyList.filter((lobby) => !(myLobbyState && myLobbyState.code === lobby.code))
-        : [];
+      const visibleLobbies = orderedLobbies.filter((lobby) => !(myLobbyState && myLobbyState.code === lobby.code));
 
       if (visibleLobbies.length === 0 && myLobbyState) {
         lobbiesListEl.classList.add("hidden");
@@ -1602,18 +1719,22 @@
         const creator = document.createElement("div");
         creator.className = "lobby-item-line";
         creator.textContent = `Creator: ${lobby.creatorNickname}`;
+        const mode = document.createElement("div");
+        mode.className = "lobby-item-line";
+        mode.textContent = `Mode: ${lobby.mode || "1v1"}`;
         const members = document.createElement("div");
         members.className = "lobby-item-line";
-        const second = lobby.joinedNickname || "Waiting for player...";
-        members.textContent = `Players: ${lobby.playerCount}/2 (${second})`;
-        info.append(name, creator, members);
+        const names = Array.isArray(lobby.memberNicknames) ? lobby.memberNicknames : [];
+        const membersText = names.length > 0 ? names.join(", ") : (lobby.joinedNickname || "Waiting for player...");
+        members.textContent = `Players: ${lobby.playerCount}/${lobby.maxPlayers || 2} (${membersText})`;
+        info.append(name, creator, mode, members);
 
         const joinBtn = document.createElement("button");
         joinBtn.type = "button";
         joinBtn.className = "main-action-btn lobby-join-btn";
         joinBtn.textContent = "Join";
 
-        const isFull = lobby.playerCount >= 2;
+        const isFull = lobby.playerCount >= (lobby.maxPlayers || 2);
         if (isFull) {
           joinBtn.disabled = true;
           joinBtn.textContent = "Full";
@@ -1635,8 +1756,18 @@
       }
     }
 
+    function applyPendingLobbyMode(lobby) {
+      if (!lobby || !pendingCreatedLobbyMode) return lobby;
+      if (!activeLobbyCode || lobby.code !== activeLobbyCode) return lobby;
+      return {
+        ...lobby,
+        mode: pendingCreatedLobbyMode,
+        maxPlayers: pendingCreatedLobbyMaxPlayers || lobby.maxPlayers || 2
+      };
+    }
+
     function createOnlineSocket() {
-      modeMetaEl.textContent = "Connecting to server...";
+      modeMetaEl.textContent = "";
       const socket = new WebSocket(ONLINE_SERVER_URL);
       socket._expectedClose = false;
       socket._hadError = false;
@@ -1655,11 +1786,11 @@
         const msg = JSON.parse(ev.data);
         if (msg.type === "welcome") myId = msg.playerId;
         if (msg.type === "lobby_list") {
-          lobbyList = Array.isArray(msg.lobbies) ? msg.lobbies : [];
+          lobbyList = Array.isArray(msg.lobbies) ? msg.lobbies.map((lobby) => applyPendingLobbyMode(lobby)) : [];
           renderLobbiesUi();
         }
         if (msg.type === "lobby_state") {
-          myLobbyState = msg.lobby || null;
+          myLobbyState = msg.lobby ? applyPendingLobbyMode(msg.lobby) : null;
           activeLobbyCode = myLobbyState?.code || "";
           onlineSearchActive = !!myLobbyState;
           if (myLobbyState) {
@@ -1667,7 +1798,11 @@
             hideCreateLobbyForm();
             hideJoinPasswordForm();
             cancelSearchBtn.classList.remove("hidden");
-            const waitingText = myLobbyState.joinedNickname ? "Ready to start" : "Waiting for player...";
+            const playerCount = myLobbyState.playerCount || 1;
+            const maxPlayers = myLobbyState.maxPlayers || 2;
+            const waitingText = playerCount >= maxPlayers
+              ? "Lobby is ready to start."
+              : `Waiting for players (${playerCount}/${maxPlayers})...`;
             statusEl.textContent = `Lobby ${myLobbyState.code}`;
             modeMetaEl.textContent = `Lobby code: ${myLobbyState.code}`;
             setLobbyMeta(`${waitingText}`);
@@ -1684,16 +1819,20 @@
           gameOver = false;
           winner = "";
           statusEl.textContent = msg.message || "Searching for player...";
-          modeMetaEl.textContent = msg.message || "Searching for player...";
+          modeMetaEl.textContent = "";
         }
         if (msg.type === "lobby_created") {
           finishCreateLobbyRequest(true);
           hideCreateLobbyForm();
           onlineSearchActive = true;
           activeLobbyCode = msg.code || "";
+          if (msg.mode) {
+            pendingCreatedLobbyMode = msg.mode;
+            pendingCreatedLobbyMaxPlayers = msg.maxPlayers || LOBBY_MODE_LIMITS[msg.mode] || 2;
+          }
           cancelSearchBtn.classList.remove("hidden");
           statusEl.textContent = `Lobby ${activeLobbyCode} created. Waiting...`;
-          modeMetaEl.textContent = `Lobby code: ${activeLobbyCode}`;
+          modeMetaEl.textContent = "";
           setLobbyMeta(`Lobby code: ${activeLobbyCode}`);
         }
         if (msg.type === "join_password_required") {
@@ -1705,7 +1844,7 @@
           activeLobbyCode = msg.code || activeLobbyCode;
           cancelSearchBtn.classList.remove("hidden");
           statusEl.textContent = `Lobby ${activeLobbyCode} waiting for player...`;
-          modeMetaEl.textContent = `Lobby code: ${activeLobbyCode}`;
+          modeMetaEl.textContent = "";
           setLobbyMeta(msg.message || "Waiting for player...");
         }
         if (msg.type === "cancelled") {
@@ -1715,7 +1854,7 @@
           myLobbyState = null;
           cancelSearchBtn.classList.add("hidden");
           statusEl.textContent = msg.message || "Search cancelled";
-          modeMetaEl.textContent = msg.message || "Search cancelled";
+          modeMetaEl.textContent = "";
           if (!lobbiesModalEl.classList.contains("hidden")) sendOnlineAction(socket, { type: "list_lobbies" });
           renderLobbiesUi();
         }
@@ -1724,7 +1863,7 @@
           onlineSearchActive = false;
           cancelSearchBtn.classList.add("hidden");
           statusEl.textContent = msg.message || "Online error";
-          modeMetaEl.textContent = msg.message || "Online error";
+          modeMetaEl.textContent = "";
           setLobbyMeta(msg.message || "Online error");
           if (!lobbiesModalEl.classList.contains("hidden")) sendOnlineAction(socket, { type: "list_lobbies" });
         }
@@ -1962,6 +2101,11 @@
       submitCreateLobby();
     });
     createLobbyPasswordInput.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      submitCreateLobby();
+    });
+    createLobbyModeInput.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
       submitCreateLobby();
