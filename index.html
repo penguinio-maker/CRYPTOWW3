@@ -21,7 +21,7 @@
       font-family: "Segoe UI", Tahoma, sans-serif;
       padding: 12px;
     }
-    .hidden { display: none !important; }
+    .hidden { display: none !important; pointer-events: none !important; }
     .main-screen {
       width: min(980px, 100%);
       margin: 0 auto;
@@ -64,6 +64,23 @@
       z-index: 40;
       display: grid;
       place-items: center;
+    }
+    .lobby-countdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(7, 16, 24, 0.52) 0%, rgba(7, 16, 24, 0.24) 40%, rgba(7, 16, 24, 0) 76%);
+      color: #e8f2ff;
+      text-align: center;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      font-size: clamp(34px, 6vw, 68px);
+      font-weight: 900;
+      letter-spacing: 0.7px;
+      text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      line-height: 1.1;
     }
     .lobbies-backdrop {
       position: absolute;
@@ -245,6 +262,17 @@
       gap: 8px;
       text-align: left;
     }
+    .create-lobby-card {
+      width: min(720px, 100%);
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 16px;
+      align-items: start;
+    }
+    .create-lobby-fields {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
     .lobby-form-title {
       margin: 0;
       font-size: 18px;
@@ -273,6 +301,147 @@
       gap: 8px;
       justify-content: flex-end;
     }
+    .map-choice-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .map-choice-btn {
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid #547286;
+      background: linear-gradient(180deg, rgba(34, 56, 71, 0.96), rgba(18, 31, 42, 0.96));
+      color: #e8f2ff;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: left;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: border-color 140ms ease, transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
+    }
+    .map-choice-btn:hover,
+    .map-choice-btn:focus-visible {
+      border-color: #8ccfff;
+      transform: translateY(-1px);
+      outline: none;
+    }
+    .map-choice-btn[aria-pressed="true"] {
+      border-color: #9ee5ff;
+      box-shadow: 0 0 0 2px rgba(92, 200, 255, 0.22);
+      background: linear-gradient(180deg, rgba(58, 103, 130, 0.96), rgba(30, 68, 91, 0.96));
+    }
+    .map-preview-panel {
+      min-height: 100%;
+      border: 1px solid #3c5e78;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(13, 26, 36, 0.96), rgba(8, 18, 27, 0.96));
+      padding: 12px;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+    }
+    .map-preview-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #e8f2ff;
+    }
+    .map-preview-desc {
+      font-size: 12px;
+      color: #b8d3e3;
+      line-height: 1.4;
+    }
+    .map-preview-stage {
+      position: relative;
+      height: 156px;
+      border-radius: 10px;
+      border: 1px solid rgba(200, 225, 240, 0.15);
+      overflow: hidden;
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      transition: opacity 180ms ease, transform 180ms ease, background 220ms ease;
+    }
+    .map-preview-stage.preview-animating {
+      opacity: 0.92;
+      transform: translateX(4px) scale(0.985);
+    }
+    .map-preview-stage[data-map="desert"] {
+      background:
+        linear-gradient(180deg, rgba(255, 234, 181, 0.16), rgba(140, 91, 44, 0.12)),
+        repeating-linear-gradient(180deg, rgba(130, 88, 44, 0.16) 0 8px, transparent 8px 22px),
+        linear-gradient(135deg, #c59a5d, #9d7542);
+    }
+    .map-preview-stage[data-map="grass"] {
+      background:
+        linear-gradient(180deg, rgba(168, 230, 143, 0.12), rgba(11, 33, 14, 0.10)),
+        radial-gradient(circle at 30% 35%, rgba(30, 67, 25, 0.26) 0 22%, transparent 22%),
+        radial-gradient(circle at 72% 70%, rgba(53, 103, 45, 0.24) 0 20%, transparent 20%),
+        linear-gradient(135deg, #437d45, #2e5f30);
+    }
+    .map-preview-stage[data-map="winter"] {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(120, 160, 194, 0.10)),
+        radial-gradient(circle at 28% 32%, rgba(122, 170, 205, 0.22) 0 18%, transparent 18%),
+        radial-gradient(circle at 76% 68%, rgba(170, 210, 236, 0.18) 0 16%, transparent 16%),
+        linear-gradient(135deg, #e5f0f6, #bfd3df);
+    }
+    .preview-wall,
+    .preview-tank,
+    .preview-particle {
+      position: absolute;
+      pointer-events: none;
+    }
+    .preview-wall {
+      width: 50px;
+      height: 28px;
+      background: rgba(20, 30, 40, 0.28);
+      border: 1px solid rgba(235, 244, 255, 0.18);
+      border-radius: 6px;
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.12);
+    }
+    .preview-wall-a { left: 22px; top: 30px; }
+    .preview-wall-b { right: 22px; bottom: 28px; }
+    .preview-tank {
+      width: 24px;
+      height: 18px;
+      left: 50%;
+      top: 50%;
+      margin-left: -12px;
+      margin-top: -9px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, rgba(233, 246, 255, 0.95), rgba(164, 197, 216, 0.95));
+      box-shadow: 0 0 0 1px rgba(10, 20, 30, 0.30);
+    }
+    .preview-tank::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 4px;
+      right: -12px;
+      top: 7px;
+      border-radius: 3px;
+      background: rgba(12, 21, 31, 0.55);
+    }
+    .preview-particle {
+      border-radius: 999px;
+      opacity: 0.55;
+    }
+    .preview-particle-a { width: 4px; height: 4px; left: 28px; bottom: 24px; }
+    .preview-particle-b { width: 3px; height: 3px; right: 30px; top: 26px; }
+    .preview-particle-c { width: 5px; height: 5px; left: 124px; top: 44px; }
+    .map-preview-stage[data-map="desert"] .preview-particle { background: rgba(244, 214, 161, 0.62); }
+    .map-preview-stage[data-map="grass"] .preview-particle { background: rgba(146, 212, 123, 0.46); }
+    .map-preview-stage[data-map="winter"] .preview-particle { background: rgba(250, 253, 255, 0.75); }
+    @media (max-width: 760px) {
+      .create-lobby-card {
+        width: min(520px, 100%);
+        grid-template-columns: 1fr;
+      }
+      .map-preview-panel {
+        order: -1;
+      }
+      .map-preview-stage {
+        height: 124px;
+      }
+    }
     .secondary-btn {
       height: 36px;
       border: 1px solid #6f8ba0;
@@ -294,9 +463,25 @@
       font-weight: 700;
       cursor: pointer;
     }
+    .main-action-btn:disabled {
+      opacity: 0.62;
+      cursor: not-allowed;
+      filter: saturate(0.6);
+    }
     .main-form {
       text-align: left;
       margin-bottom: 12px;
+    }
+    .map-select {
+      width: 100%;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #4f7088;
+      background: #0e1c28;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 14px;
+      outline: none;
     }
     .main-meta {
       min-height: 20px;
@@ -464,7 +649,6 @@
   <section id="mainMenu" class="main-screen">
     <div class="main-card">
       <h1 class="main-title">Crypto WW3</h1>
-      <p class="main-sub">Choose a mode to start the battle.</p>
       <div class="main-form">
         <label class="nick-label" for="nickname">Nickname</label>
         <div class="nick-field">
@@ -478,6 +662,22 @@
         <button id="menuOpenLobbiesBtn" class="main-action-btn" type="button">Lobbies</button>
       </div>
       <div id="modeMeta" class="main-meta"></div>
+      <div class="main-form">
+        <label class="camo-title" for="mapSelect">Map Theme</label>
+        <select id="mapSelect" class="map-select">
+          <option value="grass" selected>Green Biome</option>
+          <option value="desert">Desert</option>
+          <option value="winter">Winter</option>
+        </select>
+      </div>
+      <div class="main-form">
+        <label class="camo-title" for="arenaSizeSelect">Arena Size (Temporary)</label>
+        <select id="arenaSizeSelect" class="map-select">
+          <option value="standard" selected>Standard</option>
+          <option value="large">Large (3v3)</option>
+          <option value="xl">XL (4v4)</option>
+        </select>
+      </div>
       <div class="main-form">
         <div class="camo-title">Tank Camo</div>
         <div class="camo-grid" id="camoGrid">
@@ -509,24 +709,50 @@
       <div id="myLobbyCard" class="my-lobby-card hidden"></div>
       <div id="lobbiesList" class="lobby-list"></div>
       <div id="createLobbyFormLayer" class="lobby-form-layer hidden">
-        <div class="lobby-form-card">
-          <h3 class="lobby-form-title">Create Lobby</h3>
-          <label class="lobby-form-label" for="createLobbyNameInput">Lobby Name</label>
-          <input id="createLobbyNameInput" class="lobby-input" type="text" maxlength="24" placeholder="Enter lobby name" />
-          <div id="createLobbyNameError" class="lobby-error"></div>
-          <label class="lobby-form-label" for="createLobbyPasswordInput">Password (optional)</label>
-          <input id="createLobbyPasswordInput" class="lobby-input" type="password" maxlength="24" placeholder="Enter password (optional)" />
-          <div class="lobby-help">Password is optional. Use it only if you want to make the lobby private.</div>
-          <label class="lobby-form-label" for="createLobbyModeInput">Game Mode</label>
-          <select id="createLobbyModeInput" class="lobby-input">
-            <option value="1v1" selected>1v1</option>
-            <option value="2v2">2v2</option>
-            <option value="3v3">3v3</option>
-            <option value="4v4">4v4</option>
-          </select>
-          <div class="lobby-form-actions">
-            <button id="createLobbyCancelBtn" class="secondary-btn" type="button">Cancel</button>
-            <button id="createLobbySubmitBtn" class="main-action-btn" type="button" style="height:36px;width:112px;">Create</button>
+        <div class="lobby-form-card create-lobby-card">
+          <div class="create-lobby-fields">
+            <h3 class="lobby-form-title">Create Lobby</h3>
+            <label class="lobby-form-label" for="createLobbyNameInput">Lobby Name</label>
+            <input id="createLobbyNameInput" class="lobby-input" type="text" maxlength="24" placeholder="Enter lobby name" />
+            <div id="createLobbyNameError" class="lobby-error"></div>
+            <label class="lobby-form-label" for="createLobbyPasswordInput">Password (optional)</label>
+            <input id="createLobbyPasswordInput" class="lobby-input" type="password" maxlength="24" placeholder="Enter password (optional)" />
+            <div class="lobby-help">Password is optional. Use it only if you want to make the lobby private.</div>
+            <label class="lobby-form-label" for="createLobbyModeInput">Game Mode</label>
+            <select id="createLobbyModeInput" class="lobby-input">
+              <option value="1v1" selected>1v1</option>
+              <option value="2v2">2v2</option>
+              <option value="3v3">3v3</option>
+              <option value="4v4">4v4</option>
+            </select>
+            <label class="lobby-form-label" for="createLobbyArenaSizeInput">Arena Size</label>
+            <select id="createLobbyArenaSizeInput" class="lobby-input">
+              <option value="standard" selected>Standard</option>
+              <option value="large">Large (3v3)</option>
+              <option value="xl">XL (4v4)</option>
+            </select>
+            <label class="lobby-form-label">Map</label>
+            <div id="createLobbyMapChoices" class="map-choice-grid">
+              <button class="map-choice-btn" type="button" data-map="desert" aria-pressed="false">Desert</button>
+              <button class="map-choice-btn" type="button" data-map="grass" aria-pressed="true">Green Biome</button>
+              <button class="map-choice-btn" type="button" data-map="winter" aria-pressed="false">Winter</button>
+            </div>
+            <div class="lobby-form-actions">
+              <button id="createLobbyCancelBtn" class="secondary-btn" type="button">Cancel</button>
+              <button id="createLobbySubmitBtn" class="main-action-btn" type="button" style="height:36px;width:112px;">Create</button>
+            </div>
+          </div>
+          <div id="createLobbyPreviewPanel" class="map-preview-panel">
+            <div id="createLobbyPreviewTitle" class="map-preview-title">Green Biome</div>
+            <div id="createLobbyPreviewStage" class="map-preview-stage" data-map="grass">
+              <div class="preview-wall preview-wall-a"></div>
+              <div class="preview-wall preview-wall-b"></div>
+              <div class="preview-tank"></div>
+              <div class="preview-particle preview-particle-a"></div>
+              <div class="preview-particle preview-particle-b"></div>
+              <div class="preview-particle preview-particle-c"></div>
+            </div>
+            <div id="createLobbyPreviewDesc" class="map-preview-desc">Classic green terrain with soft grass patches and clean visibility.</div>
           </div>
         </div>
       </div>
@@ -543,6 +769,7 @@
       </div>
     </div>
   </div>
+  <div id="lobbyCountdownOverlay" class="lobby-countdown-overlay hidden"></div>
 
   <div id="gameApp" class="app hidden">
     <div class="wrap">
@@ -574,6 +801,7 @@
     const menuJoinLobbyBtn = document.getElementById("menuJoinLobbyBtn");
     const menuJoinLobbyInput = document.getElementById("menuJoinLobbyInput");
     const lobbiesModalEl = document.getElementById("lobbiesModal");
+    const lobbyCountdownOverlayEl = document.getElementById("lobbyCountdownOverlay");
     const lobbiesBackdropEl = document.getElementById("lobbiesBackdrop");
     const lobbiesCloseBtn = document.getElementById("lobbiesCloseBtn");
     const myLobbyCardEl = document.getElementById("myLobbyCard");
@@ -583,6 +811,12 @@
     const createLobbyNameErrorEl = document.getElementById("createLobbyNameError");
     const createLobbyPasswordInput = document.getElementById("createLobbyPasswordInput");
     const createLobbyModeInput = document.getElementById("createLobbyModeInput");
+    const createLobbyArenaSizeInput = document.getElementById("createLobbyArenaSizeInput");
+    const createLobbyMapChoices = document.getElementById("createLobbyMapChoices");
+    const createLobbyMapButtons = Array.from(document.querySelectorAll(".map-choice-btn"));
+    const createLobbyPreviewTitle = document.getElementById("createLobbyPreviewTitle");
+    const createLobbyPreviewStage = document.getElementById("createLobbyPreviewStage");
+    const createLobbyPreviewDesc = document.getElementById("createLobbyPreviewDesc");
     const createLobbyCancelBtn = document.getElementById("createLobbyCancelBtn");
     const createLobbySubmitBtn = document.getElementById("createLobbySubmitBtn");
     const joinPasswordFormLayerEl = document.getElementById("joinPasswordFormLayer");
@@ -591,6 +825,8 @@
     const joinPasswordCancelBtn = document.getElementById("joinPasswordCancelBtn");
     const joinPasswordSubmitBtn = document.getElementById("joinPasswordSubmitBtn");
     const nicknameInput = document.getElementById("nickname");
+    const mapSelect = document.getElementById("mapSelect");
+    const arenaSizeSelect = document.getElementById("arenaSizeSelect");
     const camoGrid = document.getElementById("camoGrid");
     const camoButtons = Array.from(document.querySelectorAll(".camo-btn"));
 
@@ -603,6 +839,7 @@
     let winner = "";
     let lastTime = 0;
     let selectedCamoId = "classic";
+    let currentMap = "grass";
     let mouseX = canvas.width / 2;
     let mouseY = canvas.height / 2;
     let hasMouse = false;
@@ -620,11 +857,16 @@
     let activeLobbyCode = "";
     let lobbyList = [];
     let myLobbyState = null;
+    let lobbyCountdownSeconds = 0;
     let pendingJoinLobbyCode = "";
     let createLobbyPending = false;
     let createLobbyTimeoutId = null;
     let pendingCreatedLobbyMode = "";
     let pendingCreatedLobbyMaxPlayers = 0;
+    let pendingCreatedLobbyMapId = "";
+    let pendingCreatedLobbyArenaSizeId = "standard";
+    let selectedCreateLobbyMapId = "grass";
+    let hoveredCreateLobbyMapId = "";
     let audioCtx = null;
     let currentMusicTrack = null;
     let currentMusicMode = "none";
@@ -650,18 +892,138 @@
     const turnSpeed = 3.4;
     const turretTurnSpeed = 6.4;
     const recoilStrength = 18;
+    const maxTankHp = 3;
+    const airdropSpawnMin = 11;
+    const airdropSpawnMax = 18;
+    const airdropFallSpeed = 88;
+    const airdropPickupSize = 18;
     const totalRounds = 3;
     const roundTime = 60;
+    const totalDropWaves = 3;
+    const dropsPerWave = 3;
+    const dropWaveTimes = [0.2, roundTime * totalRounds * 0.5, roundTime * totalRounds * 0.82];
     const LOBBY_MODE_LIMITS = {
       "1v1": 2,
       "2v2": 4,
       "3v3": 6,
       "4v4": 8
     };
+    const MODE_MAP_SIZE = {
+      "1v1": { w: 960, h: 540 },
+      "2v2": { w: 960, h: 540 },
+      "3v3": { w: 1100, h: 620 },
+      "4v4": { w: 1240, h: 700 }
+    };
+    const ARENA_SIZE_PRESETS = {
+      standard: null,
+      large: MODE_MAP_SIZE["3v3"],
+      xl: MODE_MAP_SIZE["4v4"]
+    };
+    const MAP_THEMES = {
+      grass: {
+        label: "Green Biome",
+        ground: "#3b6e3d",
+        tint: "rgba(78, 135, 71, 0.10)",
+        wallBase: [112, 133, 93],
+        wallShadow: "rgba(0, 0, 0, 0.18)"
+      },
+      desert: {
+        label: "Desert",
+        ground: "#b78f56",
+        tint: "rgba(255, 219, 120, 0.12)",
+        wallBase: [160, 131, 85],
+        wallShadow: "rgba(90, 52, 20, 0.16)"
+      },
+      winter: {
+        label: "Winter",
+        ground: "#d9e7f0",
+        tint: "rgba(153, 207, 255, 0.12)",
+        wallBase: [137, 152, 165],
+        wallShadow: "rgba(42, 63, 86, 0.16)"
+      }
+    };
+    const MAP_LABELS = {
+      desert: "Desert",
+      grass: "Green Biome",
+      winter: "Winter"
+    };
+    const MAP_PREVIEW_TEXT = {
+      desert: "Warm sand, dune lines, and dry open space with a clear desert tone.",
+      grass: "Classic green terrain with soft grass patches and clean visibility.",
+      winter: "Cold snowfield with icy highlights, pale light, and crisp winter contrast."
+    };
+    const ARENA_SIZE_LABELS = {
+      standard: "Standard",
+      large: "Large",
+      xl: "XL"
+    };
 
+    function createSeededRandom(seed) {
+      let value = seed >>> 0;
+      return () => {
+        value = (value * 1664525 + 1013904223) >>> 0;
+        return value / 4294967296;
+      };
+    }
+
+    function buildMapDecorations(seed) {
+      const rand = createSeededRandom(seed);
+      const blobs = [];
+      const pebbles = [];
+      const specks = [];
+      for (let i = 0; i < 14; i++) {
+        blobs.push({
+          x: 40 + rand() * (world.w - 80),
+          y: 40 + rand() * (world.h - 80),
+          rx: 26 + rand() * 84,
+          ry: 18 + rand() * 52,
+          rot: rand() * Math.PI
+        });
+      }
+      for (let i = 0; i < 26; i++) {
+        pebbles.push({
+          x: 24 + rand() * (world.w - 48),
+          y: 24 + rand() * (world.h - 48),
+          r: 2 + rand() * 5
+        });
+      }
+      for (let i = 0; i < 130; i++) {
+        specks.push({
+          x: rand() * world.w,
+          y: rand() * world.h,
+          len: 3 + rand() * 7,
+          rot: rand() * Math.PI
+        });
+      }
+      return { blobs, pebbles, specks };
+    }
+
+    let MAP_DECORATIONS = {};
+
+    function getLargeModeProfile(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
+      if (modeId === "4v4" || arenaSizeId === "xl") return "4v4";
+      if (modeId === "3v3" || arenaSizeId === "large") return "3v3";
+      return "small";
+    }
+    function isLargeTeamMode(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
+      return getLargeModeProfile(modeId, arenaSizeId) !== "small";
+    }
+    function getModeTankScale(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
+      const profile = getLargeModeProfile(modeId, arenaSizeId);
+      if (profile === "4v4") return 1.18;
+      if (profile === "3v3") return 1.12;
+      return 1;
+    }
+    function getModeBulletRadius(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
+      const profile = getLargeModeProfile(modeId, arenaSizeId);
+      if (profile === "4v4") return 5.2;
+      if (profile === "3v3") return 4.7;
+      return 4;
+    }
     function createTank(x, y, camo, angle) {
+      const scale = getModeTankScale();
       return {
-        x, y, w: 38, h: 26, angle, turretAngle: angle, driveSpeed: 0, angularVelocity: 0, camo, hp: 3, fireCd: 0,
+        x, y, w: 38 * scale, h: 26 * scale, angle, turretAngle: angle, driveSpeed: 0, angularVelocity: 0, camo, hp: 3, fireCd: 0, hasArmor: false, armorPop: 0,
         aiState: "approach",
         aiDecisionTimer: 0,
         aiStrafeDir: 1,
@@ -671,17 +1033,120 @@
         aiStuckTimer: 0
       };
     }
+    function coverStylesForMap(mapId) {
+      if (mapId === "desert") return ["rock", "crate", "sandbag", "crate", "rock"];
+      if (mapId === "winter") return ["ice", "crate", "barrier", "crate", "ice"];
+      return ["rock", "crate", "log", "crate", "rock"];
+    }
+    function coverHpForStyle(style) {
+      if (style === "rock" || style === "ice") return Infinity;
+      if (style === "sandbag") return 4;
+      if (style === "barrier" || style === "log") return 3;
+      return 3;
+    }
+    function buildLightCover() {
+      const mapId = currentMap || "grass";
+      const cx = world.w / 2;
+      const cy = world.h / 2;
+      let items;
+      if (mapId === "desert") {
+        items = [
+          { x: cx - 240, y: cy - 150, w: 46, h: 24, style: "dune-grass" },
+          { x: cx + 224, y: cy + 138, w: 42, h: 18, style: "scrap" },
+          { x: cx - 24, y: cy + 184, w: 54, h: 20, style: "sand-debris" }
+        ];
+      } else if (mapId === "winter") {
+        items = [
+          { x: cx - 228, y: cy - 146, w: 44, h: 26, style: "snowpile" },
+          { x: cx + 236, y: cy + 136, w: 38, h: 22, style: "snowpile" },
+          { x: cx + 10, y: cy - 196, w: 48, h: 18, style: "frost-shard" }
+        ];
+      } else {
+        items = [
+          { x: cx - 232, y: cy - 146, w: 42, h: 24, style: "bush" },
+          { x: cx + 228, y: cy + 138, w: 40, h: 22, style: "bush" },
+          { x: cx + 12, y: cy - 192, w: 34, h: 20, style: "stump" }
+        ];
+      }
+      const profile = getLargeModeProfile();
+      if (profile === "small") return items;
+      const extra = mapId === "desert"
+        ? [
+            { x: world.w * 0.14, y: world.h * 0.18, w: 46, h: 18, style: "sand-debris" },
+            { x: world.w * 0.86, y: world.h * 0.18, w: 46, h: 18, style: "scrap" },
+            { x: world.w * 0.14, y: world.h * 0.82, w: 44, h: 18, style: "dune-grass" },
+            { x: world.w * 0.86, y: world.h * 0.82, w: 44, h: 18, style: "sand-debris" },
+            { x: world.w * 0.50, y: world.h * 0.10, w: 54, h: 18, style: "scrap" },
+            { x: world.w * 0.50, y: world.h * 0.90, w: 54, h: 18, style: "dune-grass" }
+          ]
+        : mapId === "winter"
+          ? [
+              { x: world.w * 0.14, y: world.h * 0.18, w: 44, h: 24, style: "snowpile" },
+              { x: world.w * 0.86, y: world.h * 0.18, w: 44, h: 24, style: "frost-shard" },
+              { x: world.w * 0.14, y: world.h * 0.82, w: 44, h: 24, style: "snowpile" },
+              { x: world.w * 0.86, y: world.h * 0.82, w: 44, h: 24, style: "snowpile" },
+              { x: world.w * 0.50, y: world.h * 0.10, w: 52, h: 18, style: "frost-shard" },
+              { x: world.w * 0.50, y: world.h * 0.90, w: 52, h: 18, style: "snowpile" }
+            ]
+          : [
+              { x: world.w * 0.14, y: world.h * 0.18, w: 40, h: 22, style: "bush" },
+              { x: world.w * 0.86, y: world.h * 0.18, w: 40, h: 22, style: "stump" },
+              { x: world.w * 0.14, y: world.h * 0.82, w: 40, h: 22, style: "bush" },
+              { x: world.w * 0.86, y: world.h * 0.82, w: 40, h: 22, style: "bush" },
+              { x: world.w * 0.50, y: world.h * 0.10, w: 48, h: 18, style: "stump" },
+              { x: world.w * 0.50, y: world.h * 0.90, w: 48, h: 18, style: "bush" }
+            ];
+      return [...items, ...extra];
+    }
     function baseWalls() {
+      const cx = world.w / 2;
+      const cy = world.h / 2;
+      const sideWallW = 100;
+      const sideWallH = 60;
+      const centerWallW = 80;
+      const centerWallH = 60;
+      const xOffset = Math.min(180, Math.max(120, world.w * 0.17));
+      const yOffset = Math.min(96, Math.max(60, world.h * 0.11));
+      const styles = coverStylesForMap(currentMap || "grass");
+      const walls = [
+        { x: cx - xOffset - sideWallW / 2, y: cy - yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[0]), style: styles[0] },
+        { x: cx - xOffset - sideWallW / 2, y: cy + yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[1]), style: styles[1] },
+        { x: cx + xOffset - sideWallW / 2, y: cy - yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[2]), style: styles[2] },
+        { x: cx + xOffset - sideWallW / 2, y: cy + yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[3]), style: styles[3] },
+        { x: cx - centerWallW / 2, y: cy - centerWallH / 2, w: centerWallW, h: centerWallH, hp: coverHpForStyle(styles[4]), style: styles[4] }
+      ];
+      const profile = getLargeModeProfile();
+      if (profile === "small") return walls;
+      const extraTemplates = [
+        { x: world.w * 0.22, y: world.h * 0.22, w: 88, h: 42, style: styles[1] },
+        { x: world.w * 0.78, y: world.h * 0.22, w: 88, h: 42, style: styles[2] },
+        { x: world.w * 0.22, y: world.h * 0.78, w: 88, h: 42, style: styles[3] },
+        { x: world.w * 0.78, y: world.h * 0.78, w: 88, h: 42, style: styles[0] },
+        { x: world.w * 0.50, y: world.h * 0.16, w: 76, h: 34, style: styles[4] },
+        { x: world.w * 0.50, y: world.h * 0.84, w: 76, h: 34, style: styles[4] }
+      ];
+      if (profile === "4v4") {
+        extraTemplates.push(
+          { x: world.w * 0.10, y: world.h * 0.34, w: 70, h: 32, style: styles[1] },
+          { x: world.w * 0.90, y: world.h * 0.34, w: 70, h: 32, style: styles[2] },
+          { x: world.w * 0.10, y: world.h * 0.66, w: 70, h: 32, style: styles[3] },
+          { x: world.w * 0.90, y: world.h * 0.66, w: 70, h: 32, style: styles[0] }
+        );
+      }
       return [
-        { x: 300, y: 180, w: 100, h: 60, hp: 3 },
-        { x: 300, y: 300, w: 100, h: 60, hp: 3 },
-        { x: 560, y: 180, w: 100, h: 60, hp: 3 },
-        { x: 560, y: 300, w: 100, h: 60, hp: 3 },
-        { x: 440, y: 240, w: 80, h: 60, hp: 3 }
+        ...walls,
+        ...extraTemplates.map((item) => ({
+          x: item.x - item.w / 2,
+          y: item.y - item.h / 2,
+          w: item.w,
+          h: item.h,
+          hp: coverHpForStyle(item.style),
+          style: item.style
+        }))
       ];
     }
 
-    let player, enemy, bullets, walls;
+    let player, enemy, bullets, walls, lightCover;
     let onlineState = null;
     let currentRound = 1;
     let roundWinners = [];
@@ -689,25 +1154,125 @@
     let roundEnded = false;
     let roundTransitionTimer = 0;
     let roundResult = "draw";
+    let ambientParticles = [];
+    let particleMapId = "";
+    let currentArenaMode = "1v1";
+    let currentArenaSizeId = "standard";
+    let trackMarks = [];
+    let airdrops = [];
+    let dropWaveIndex = 0;
+    let matchElapsed = 0;
+    const trackEmitters = new Map();
+    const trackFadeTime = 7.5;
+    const maxTrackMarks = 260;
+
+    function normalizeArenaSizeId(arenaSizeId) {
+      return Object.prototype.hasOwnProperty.call(ARENA_SIZE_PRESETS, arenaSizeId) ? arenaSizeId : "standard";
+    }
+
+    function getArenaSize(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
+      const override = ARENA_SIZE_PRESETS[normalizeArenaSizeId(arenaSizeId)];
+      return override || MODE_MAP_SIZE[modeId] || MODE_MAP_SIZE["1v1"];
+    }
+
+    function rebuildMapDecorations() {
+      MAP_DECORATIONS = {
+        grass: buildMapDecorations(1031),
+        desert: buildMapDecorations(2077),
+        winter: buildMapDecorations(4099)
+      };
+    }
+
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function pickLocalAirdropSpot(existingDrops = []) {
+      const size = 24;
+      for (let i = 0; i < 18; i++) {
+        const x = randomBetween(78, world.w - 78);
+        const y = randomBetween(78, world.h - 78);
+        const rect = { x: x - size / 2, y: y - size / 2, w: size, h: size };
+        const nearOtherDrop = existingDrops.some((drop) => Math.hypot((drop.targetX ?? drop.x) - x, (drop.targetY ?? drop.y) - y) < 90);
+        if (!(walls || []).some((wall) => rectsOverlap(rect, wall)) && !nearOtherDrop) return { x, y };
+      }
+      return { x: world.w / 2, y: world.h / 2 };
+    }
+
+    function makeLocalAirdrop(existingDrops, delay = 0) {
+      const spot = pickLocalAirdropSpot(existingDrops);
+      return {
+        phase: delay > 0 ? "queued" : "falling",
+        pickupType: Math.random() < 0.5 ? "armor" : "medkit",
+        x: spot.x,
+        y: -36,
+        targetX: spot.x,
+        targetY: spot.y,
+        drift: randomBetween(-10, 10),
+        vy: airdropFallSpeed,
+        timer: delay
+      };
+    }
+
+    function spawnLocalDropWave() {
+      const planned = [...airdrops];
+      for (let i = 0; i < dropsPerWave; i++) {
+        const drop = makeLocalAirdrop(planned, i * 0.22);
+        planned.push(drop);
+        airdrops.push(drop);
+      }
+    }
+
+    function resetTrackMarks() {
+      trackMarks = [];
+      trackEmitters.clear();
+    }
+
+    function applyArenaSize(modeId = "1v1", arenaSizeId = "standard", explicitWidth = 0, explicitHeight = 0) {
+      const nextMode = MODE_MAP_SIZE[modeId] ? modeId : "1v1";
+      const nextArenaSizeId = normalizeArenaSizeId(arenaSizeId);
+      const size = explicitWidth > 0 && explicitHeight > 0
+        ? { w: explicitWidth, h: explicitHeight }
+        : getArenaSize(nextMode, nextArenaSizeId);
+      const decorationsReady = !!(MAP_DECORATIONS.grass && MAP_DECORATIONS.desert && MAP_DECORATIONS.winter);
+      if (currentArenaMode === nextMode && currentArenaSizeId === nextArenaSizeId && world.w === size.w && world.h === size.h && decorationsReady) return;
+      currentArenaMode = nextMode;
+      currentArenaSizeId = nextArenaSizeId;
+      world.w = size.w;
+      world.h = size.h;
+      canvas.width = size.w;
+      canvas.height = size.h;
+      mouseX = Math.max(0, Math.min(world.w, mouseX));
+      mouseY = Math.max(0, Math.min(world.h, mouseY));
+      rebuildMapDecorations();
+      resetAmbientParticles(currentMap);
+      resetTrackMarks();
+    }
 
     function setMode(nextMode) {
       mode = nextMode;
-      menuPlayAiBtn.style.filter = mode === "ai" ? "brightness(1.08)" : "";
-      menuPlayOnlineRandomBtn.style.filter = mode === "online" ? "brightness(1.08)" : "";
-      menuOpenLobbiesBtn.style.filter = mode === "online" ? "brightness(1.08)" : "";
+      if (menuPlayAiBtn) menuPlayAiBtn.style.filter = mode === "ai" ? "brightness(1.08)" : "";
+      if (menuPlayOnlineRandomBtn) menuPlayOnlineRandomBtn.style.filter = mode === "online" ? "brightness(1.08)" : "";
+      if (menuOpenLobbiesBtn) menuOpenLobbiesBtn.style.filter = mode === "online" ? "brightness(1.08)" : "";
       modeMetaEl.textContent = mode === "ai" ? "" : `Server required: ${ONLINE_SERVER_URL}`;
       statusEl.textContent = mode === "ai" ? "Press R to start" : "Online mode";
     }
 
     function resetAiRound() {
-      player = createTank(120, 270, CAMOS[selectedCamoId], 0);
-      enemy = createTank(840, 270, ENEMY_CAMO, Math.PI);
+      currentMap = mapSelect?.value || currentMap || "grass";
+      applyArenaSize("1v1", arenaSizeSelect?.value || "standard");
+      resetAmbientParticles(currentMap);
+      player = createTank(Math.max(120, world.w * 0.13), world.h / 2, CAMOS[selectedCamoId], 0);
+      enemy = createTank(world.w - Math.max(120, world.w * 0.13), world.h / 2, ENEMY_CAMO, Math.PI);
       bullets = [];
       walls = baseWalls();
+      lightCover = buildLightCover();
+      airdrops = [];
       roundTimer = roundTime;
       roundEnded = false;
       roundTransitionTimer = 0;
       roundResult = "draw";
+      resetTrackMarks();
     }
 
     function midiToFreq(midi) {
@@ -902,6 +1467,48 @@
       };
     }
 
+    function playArmorBreakSound() {
+      if (!audioUnlocked) return;
+      ensureAudioContext();
+      const now = audioCtx.currentTime;
+      const output = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      const oscA = audioCtx.createOscillator();
+      const oscB = audioCtx.createOscillator();
+
+      output.gain.setValueAtTime(0.0001, now);
+      output.gain.linearRampToValueAtTime(0.032, now + 0.01);
+      output.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(900, now);
+      filter.frequency.exponentialRampToValueAtTime(520, now + 0.14);
+      filter.Q.value = 0.6;
+
+      oscA.type = "sine";
+      oscB.type = "triangle";
+      oscA.frequency.setValueAtTime(680, now);
+      oscA.frequency.exponentialRampToValueAtTime(260, now + 0.15);
+      oscB.frequency.setValueAtTime(910, now);
+      oscB.frequency.exponentialRampToValueAtTime(380, now + 0.13);
+
+      oscA.connect(filter);
+      oscB.connect(filter);
+      filter.connect(output);
+      output.connect(audioCtx.destination);
+
+      oscA.start(now);
+      oscB.start(now);
+      oscA.stop(now + 0.18);
+      oscB.stop(now + 0.18);
+      oscA.onended = () => {
+        try { oscA.disconnect(); } catch {}
+        try { oscB.disconnect(); } catch {}
+        try { filter.disconnect(); } catch {}
+        try { output.disconnect(); } catch {}
+      };
+    }
+
     function fadeOutAndStop(track, duration = 0.7) {
       if (!track || !audioCtx) return;
       const now = audioCtx.currentTime;
@@ -963,8 +1570,15 @@
       }).catch(() => {});
     }
     function startAiGame() {
+      onlineState = null;
+      onlineSearchActive = false;
+      activeLobbyCode = "";
+      myLobbyState = null;
+      cancelSearchBtn.classList.add("hidden");
       currentRound = 1;
       roundWinners = [];
+      matchElapsed = 0;
+      dropWaveIndex = 0;
       gameOver = false;
       winner = "";
       resetAiRound();
@@ -976,6 +1590,9 @@
       gameOver = false;
       winner = "";
       bullets = [];
+      airdrops = [];
+      matchElapsed = 0;
+      dropWaveIndex = 0;
       currentRound = 1;
       roundWinners = [];
       roundTimer = roundTime;
@@ -984,6 +1601,7 @@
     }
 
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function randomBetween(min, max) { return min + Math.random() * (max - min); }
     function approachAngle(current, target, maxStep) {
       let diff = target - current;
       while (diff > Math.PI) diff -= Math.PI * 2;
@@ -994,6 +1612,14 @@
     function formatNickname(name, fallback) {
       const clean = (name || "").trim() || fallback;
       return clean.length > 9 ? `${clean.slice(0, 9)}...` : clean;
+    }
+    function formatLobbyNickname(name, fallback) {
+      const clean = (name || "").trim() || fallback;
+      return clean.length > 15 ? `${clean.slice(0, 15)}...` : clean;
+    }
+    function getOnlineNickname() {
+      const clean = (nicknameInput?.value || "").trim() || "PLAYER";
+      return clean.slice(0, 18);
     }
     function rectsOverlap(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
     function tankRect(t) { return { x: t.x - t.w / 2, y: t.y - t.h / 2, w: t.w, h: t.h }; }
@@ -1009,7 +1635,8 @@
       if (mode === "ai" && roundEnded) return;
       tank.fireCd = 0.45;
       const fireAngle = tank.turretAngle ?? tank.angle;
-      bullets.push({ x: tank.x + Math.cos(fireAngle) * 24, y: tank.y + Math.sin(fireAngle) * 24, vx: Math.cos(fireAngle) * 380, vy: Math.sin(fireAngle) * 380, r: 4, owner });
+      const muzzle = Math.max(24, tank.w * 0.64);
+      bullets.push({ x: tank.x + Math.cos(fireAngle) * muzzle, y: tank.y + Math.sin(fireAngle) * muzzle, vx: Math.cos(fireAngle) * 380, vy: Math.sin(fireAngle) * 380, r: getModeBulletRadius(), owner });
       tank.driveSpeed -= recoilStrength;
       playShootSound();
     }
@@ -1038,10 +1665,25 @@
     }
 
     function damageTank(tank, by) {
+      if (tank.hasArmor) {
+        tank.hasArmor = false;
+        tank.armorPop = 0.22;
+        playArmorBreakSound();
+        return;
+      }
       tank.hp -= 1;
       if (tank.hp <= 0) {
         finishAiRound(by === "player" ? "player" : "enemy");
       }
+    }
+
+    function applyLocalPickupHeal(tank) {
+      tank.hp = Math.min(maxTankHp, tank.hp + 1);
+    }
+
+    function applyLocalPickupArmor(tank) {
+      tank.hasArmor = true;
+      tank.armorPop = 0;
     }
 
     function normalizeAngleDiff(from, to) {
@@ -1098,6 +1740,7 @@
 
       moveTankWithSlide(tank, dt);
       tank.fireCd = Math.max(0, tank.fireCd - dt);
+      tank.armorPop = Math.max(0, (tank.armorPop || 0) - dt);
     }
 
     function updatePlayer(dt) {
@@ -1193,6 +1836,75 @@
       }
     }
 
+    function updateLocalAirdrop(dt) {
+      if (roundEnded || gameOver) return;
+      matchElapsed += dt;
+      while (dropWaveIndex < totalDropWaves && matchElapsed >= dropWaveTimes[dropWaveIndex]) {
+        spawnLocalDropWave();
+        dropWaveIndex += 1;
+      }
+
+      for (let i = airdrops.length - 1; i >= 0; i--) {
+        const drop = airdrops[i];
+        if (drop.phase === "queued") {
+          drop.timer -= dt;
+          if (drop.timer <= 0) {
+            drop.phase = "falling";
+            drop.timer = 0;
+          }
+          continue;
+        }
+
+        if (drop.phase === "falling") {
+          drop.x += drop.drift * dt;
+          drop.y += drop.vy * dt;
+          if (drop.y >= drop.targetY) {
+            drop.y = drop.targetY;
+            drop.phase = "landed";
+            drop.timer = 0.28;
+            drop.drift = 0;
+          }
+          continue;
+        }
+
+        if (drop.phase === "landed") {
+          drop.timer -= dt;
+          if (drop.timer <= 0) {
+            drop.phase = "pickup";
+            drop.timer = 0;
+          }
+          continue;
+        }
+
+        if (drop.phase !== "pickup") continue;
+
+        let consumed = false;
+        for (const tank of [player, enemy]) {
+          if (!tank) continue;
+          if (Math.abs(tank.x - drop.x) <= tank.w / 2 + airdropPickupSize / 2 && Math.abs(tank.y - drop.y) <= tank.h / 2 + airdropPickupSize / 2) {
+            if (drop.pickupType === "armor") {
+              if (!tank.hasArmor) {
+                applyLocalPickupArmor(tank);
+                consumed = true;
+              }
+            } else if (tank.hp < maxTankHp) {
+              applyLocalPickupHeal(tank);
+              consumed = true;
+            }
+          }
+          if (consumed) break;
+        }
+        if (consumed) airdrops.splice(i, 1);
+      }
+    }
+
+    function drawAirdrops(list) {
+      for (const drop of list || []) {
+        if (drop.phase === "queued") continue;
+        drawAirdrop(drop);
+      }
+    }
+
     function drawTank(tank) {
       ctx.save();
       ctx.translate(tank.x, tank.y);
@@ -1213,13 +1925,37 @@
       ctx.fillStyle = tank.camo.barrel;
       ctx.fillRect(2, -3, 26, 6);
       ctx.restore();
+
+      if (tank.hasArmor || (tank.armorPop || 0) > 0) {
+        const pop = Math.max(0, tank.armorPop || 0);
+        const ringRadius = Math.max(tank.w, tank.h) * 0.56 + pop * 34;
+        const alpha = tank.hasArmor ? 0.34 : pop * 1.9;
+        ctx.save();
+        ctx.strokeStyle = `rgba(112, 205, 255, ${alpha})`;
+        ctx.lineWidth = tank.hasArmor ? 2 : 2.8;
+        ctx.beginPath();
+        ctx.arc(tank.x, tank.y, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(112, 205, 255, ${tank.hasArmor ? 0.07 : pop * 0.26})`;
+        ctx.beginPath();
+        ctx.arc(tank.x, tank.y, ringRadius - 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
     function drawTankNickname(tank, name) {
-      ctx.fillStyle = "#e8f2ff";
+      const textY = tank.y + tank.h / 2 + 8;
       ctx.font = "bold 11px 'Courier New', monospace";
+      const width = Math.max(28, ctx.measureText(name).width + 10);
+      ctx.fillStyle = "rgba(8, 14, 20, 0.55)";
+      ctx.fillRect(tank.x - width / 2, textY - 1, width, 14);
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+      ctx.lineWidth = 2.5;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(name, tank.x, tank.y + tank.h / 2 + 8);
+      ctx.strokeText(name, tank.x, textY);
+      ctx.fillStyle = "#f4fbff";
+      ctx.fillText(name, tank.x, textY);
       ctx.textAlign = "start";
       ctx.textBaseline = "alphabetic";
     }
@@ -1254,23 +1990,239 @@
     }
     function drawWalls(list) {
       for (const wall of list || []) {
-        ctx.fillStyle = "rgba(0,0,0,0.2)";
-        ctx.fillRect(wall.x + 3, wall.y + 3, wall.w, wall.h);
-        const shade = 130 + wall.hp * 25;
-        ctx.fillStyle = `rgb(${shade}, ${shade - 20}, ${shade - 50})`;
-        ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
-        ctx.fillStyle = "#0f1720";
-        ctx.font = "13px Segoe UI";
-        ctx.fillText(String(wall.hp), wall.x + wall.w / 2 - 4, wall.y + wall.h / 2 + 4);
+        const hpValue = Number.isFinite(wall.hp) ? wall.hp : 999;
+        const durability = Math.min(1, hpValue / 3);
+        ctx.save();
+        ctx.translate(wall.x + wall.w / 2, wall.y + wall.h / 2);
+        if (wall.style === "rock") {
+          ctx.fillStyle = "rgba(20, 24, 28, 0.16)";
+          ctx.beginPath();
+          ctx.ellipse(4, 6, wall.w * 0.48, wall.h * 0.42, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = `rgba(116, 116, 108, ${0.78 + durability * 0.12})`;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, wall.w * 0.46, wall.h * 0.38, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255,0.08)";
+          ctx.beginPath();
+          ctx.ellipse(-wall.w * 0.08, -wall.h * 0.1, wall.w * 0.18, wall.h * 0.12, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (wall.style === "ice") {
+          ctx.fillStyle = "rgba(40, 68, 92, 0.18)";
+          ctx.fillRect(-wall.w / 2 + 4, -wall.h / 2 + 4, wall.w, wall.h);
+          ctx.fillStyle = `rgba(186, 225, 245, ${0.74 + durability * 0.14})`;
+          ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+          ctx.strokeStyle = "rgba(255,255,255,0.36)";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(-wall.w / 2 + 0.5, -wall.h / 2 + 0.5, wall.w - 1, wall.h - 1);
+          ctx.beginPath();
+          ctx.moveTo(-wall.w * 0.22, -wall.h * 0.18);
+          ctx.lineTo(wall.w * 0.18, wall.h * 0.12);
+          ctx.moveTo(-wall.w * 0.08, wall.h * 0.16);
+          ctx.lineTo(wall.w * 0.24, -wall.h * 0.12);
+          ctx.stroke();
+        } else if (wall.style === "sandbag") {
+          for (let i = -1; i <= 1; i++) {
+            ctx.fillStyle = `rgba(176, 152, 102, ${0.72 + durability * 0.12})`;
+            ctx.beginPath();
+            ctx.ellipse(i * 20, -6, 18, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(i * 20, 8, 18, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (wall.style === "log") {
+          ctx.fillStyle = "rgba(76, 53, 31, 0.22)";
+          ctx.fillRect(-wall.w / 2 + 4, -wall.h / 2 + 5, wall.w, wall.h * 0.7);
+          ctx.fillStyle = `rgba(122, 85, 48, ${0.72 + durability * 0.12})`;
+          ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h * 0.68);
+          ctx.strokeStyle = "rgba(68, 45, 25, 0.7)";
+          for (let i = -2; i <= 2; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * 18, -wall.h * 0.34);
+            ctx.lineTo(i * 18, wall.h * 0.14);
+            ctx.stroke();
+          }
+        } else if (wall.style === "barrier") {
+          ctx.fillStyle = "rgba(34, 48, 58, 0.22)";
+          ctx.fillRect(-wall.w / 2 + 4, -wall.h / 2 + 4, wall.w, wall.h);
+          ctx.fillStyle = `rgba(108, 136, 148, ${0.72 + durability * 0.12})`;
+          ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+          ctx.strokeStyle = "rgba(233, 245, 255, 0.2)";
+          ctx.strokeRect(-wall.w / 2 + 0.5, -wall.h / 2 + 0.5, wall.w - 1, wall.h - 1);
+          ctx.beginPath();
+          ctx.moveTo(-wall.w * 0.28, -wall.h * 0.3);
+          ctx.lineTo(-wall.w * 0.1, wall.h * 0.3);
+          ctx.moveTo(wall.w * 0.04, -wall.h * 0.3);
+          ctx.lineTo(wall.w * 0.22, wall.h * 0.3);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(45, 24, 14, 0.18)";
+          ctx.fillRect(-wall.w / 2 + 4, -wall.h / 2 + 4, wall.w, wall.h);
+          ctx.fillStyle = `rgba(141, 94, 51, ${0.74 + durability * 0.12})`;
+          ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+          ctx.strokeStyle = "rgba(255,255,255,0.1)";
+          ctx.strokeRect(-wall.w / 2 + 0.5, -wall.h / 2 + 0.5, wall.w - 1, wall.h - 1);
+          ctx.beginPath();
+          ctx.moveTo(-wall.w * 0.18, -wall.h / 2);
+          ctx.lineTo(-wall.w * 0.18, wall.h / 2);
+          ctx.moveTo(wall.w * 0.14, -wall.h / 2);
+          ctx.lineTo(wall.w * 0.14, wall.h / 2);
+          ctx.moveTo(-wall.w / 2, 0);
+          ctx.lineTo(wall.w / 2, 0);
+          ctx.stroke();
+        }
+
+        if (Number.isFinite(wall.hp) && wall.hp <= 9) {
+          ctx.fillStyle = currentMap === "winter" ? "#203544" : "#0f1720";
+          ctx.font = "13px Segoe UI";
+          ctx.fillText(String(wall.hp), -4, 4);
+        }
+        ctx.restore();
+      }
+    }
+    function drawLightCover(list) {
+      for (const item of list || []) {
+        ctx.save();
+        ctx.translate(item.x, item.y);
+        if (item.style === "bush") {
+          ctx.fillStyle = "rgba(34, 74, 29, 0.30)";
+          ctx.beginPath();
+          ctx.arc(-8, 0, 10, 0, Math.PI * 2);
+          ctx.arc(0, -4, 12, 0, Math.PI * 2);
+          ctx.arc(10, 2, 9, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.style === "stump") {
+          ctx.fillStyle = "rgba(108, 82, 52, 0.32)";
+          ctx.fillRect(-item.w / 2, -item.h / 2, item.w, item.h);
+          ctx.strokeStyle = "rgba(62, 40, 20, 0.55)";
+          ctx.strokeRect(-item.w / 2 + 0.5, -item.h / 2 + 0.5, item.w - 1, item.h - 1);
+        } else if (item.style === "snowpile") {
+          ctx.fillStyle = "rgba(234, 244, 250, 0.78)";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, item.w / 2, item.h / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.style === "frost-shard") {
+          ctx.fillStyle = "rgba(172, 212, 235, 0.34)";
+          ctx.beginPath();
+          ctx.moveTo(-item.w / 2, item.h / 2);
+          ctx.lineTo(0, -item.h / 2);
+          ctx.lineTo(item.w / 2, item.h / 2);
+          ctx.closePath();
+          ctx.fill();
+        } else if (item.style === "scrap") {
+          ctx.fillStyle = "rgba(122, 104, 82, 0.28)";
+          ctx.fillRect(-item.w / 2, -item.h / 2, item.w, item.h);
+        } else {
+          ctx.fillStyle = "rgba(175, 152, 99, 0.20)";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, item.w / 2, item.h / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
       }
     }
     function drawBullets(list) {
       for (const b of list || []) {
-        ctx.fillStyle = b.owner === "player0" || b.owner === "player" ? "#9ee5ff" : "#ffc3c3";
+        const isPlayerShot = b.owner === "player0" || b.owner === "player";
+        const fill = currentMap === "winter"
+          ? (isPlayerShot ? "#1d7fd8" : "#d8613d")
+          : (isPlayerShot ? "#7fd8ff" : "#ff8f7a");
+        const glow = currentMap === "winter"
+          ? (isPlayerShot ? "rgba(29, 127, 216, 0.22)" : "rgba(216, 97, 61, 0.22)")
+          : (isPlayerShot ? "rgba(127, 216, 255, 0.18)" : "rgba(255, 143, 122, 0.18)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, (b.r || 4) + 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(8, 14, 20, 0.78)";
+        ctx.lineWidth = 1.25;
+        ctx.fillStyle = fill;
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r || 4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
       }
+    }
+
+    function drawAirdrop(drop) {
+      if (!drop) return;
+      const crateY = drop.phase === "pickup" ? drop.y : drop.y;
+      if (drop.phase === "falling") {
+        ctx.save();
+        ctx.strokeStyle = "rgba(230, 236, 240, 0.7)";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(drop.x - 11, crateY - 14);
+        ctx.lineTo(drop.x - 4, crateY - 3);
+        ctx.moveTo(drop.x + 11, crateY - 14);
+        ctx.lineTo(drop.x + 4, crateY - 3);
+        ctx.moveTo(drop.x, crateY - 15);
+        ctx.lineTo(drop.x, crateY - 3);
+        ctx.stroke();
+        ctx.fillStyle = "#4e8a4d";
+        ctx.beginPath();
+        ctx.moveTo(drop.x - 16, crateY - 16);
+        ctx.quadraticCurveTo(drop.x, crateY - 30, drop.x + 16, crateY - 16);
+        ctx.lineTo(drop.x + 11, crateY - 13);
+        ctx.quadraticCurveTo(drop.x, crateY - 22, drop.x - 11, crateY - 13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (drop.phase === "pickup") {
+        ctx.save();
+        ctx.translate(drop.x, crateY);
+        if (drop.pickupType === "armor") {
+          ctx.fillStyle = "rgba(80, 170, 230, 0.16)";
+          ctx.beginPath();
+          ctx.arc(0, 0, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(130, 220, 255, 0.75)";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 8.5, Math.PI * 0.92, Math.PI * 0.08, true);
+          ctx.lineTo(0, 8.5);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.fillStyle = "rgba(130, 220, 255, 0.24)";
+          ctx.beginPath();
+          ctx.arc(0, -2, 6, Math.PI * 0.92, Math.PI * 0.08, true);
+          ctx.lineTo(0, 6);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillStyle = "rgba(20, 30, 40, 0.16)";
+          ctx.fillRect(-11, -11, 22, 22);
+          ctx.fillStyle = "#f4f7fb";
+          ctx.fillRect(-9, -9, 18, 18);
+          ctx.fillStyle = "#d94e4e";
+          ctx.fillRect(-2.5, -6.5, 5, 13);
+          ctx.fillRect(-6.5, -2.5, 13, 5);
+        }
+        ctx.restore();
+        return;
+      }
+
+      ctx.save();
+      ctx.translate(drop.x, crateY);
+      ctx.fillStyle = "rgba(30, 20, 14, 0.18)";
+      ctx.fillRect(-14, 9, 28, 6);
+      ctx.fillStyle = "#8b5a33";
+      ctx.fillRect(-12, -6, 24, 18);
+      ctx.strokeStyle = "#5b361a";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-12, -6, 24, 18);
+      ctx.beginPath();
+      ctx.moveTo(-4, -6);
+      ctx.lineTo(-4, 12);
+      ctx.moveTo(4, -6);
+      ctx.lineTo(4, 12);
+      ctx.moveTo(-12, 1);
+      ctx.lineTo(12, 1);
+      ctx.stroke();
+      ctx.restore();
     }
     function drawCrosshair() {
       if (!hasMouse) return;
@@ -1362,14 +2314,327 @@
       ctx.textAlign = "start";
     }
 
+    function createAmbientParticle(mapId, respawn = false) {
+      if (mapId === "desert") {
+        return {
+          x: respawn ? -12 - Math.random() * 40 : Math.random() * world.w,
+          y: Math.random() * world.h,
+          vx: randomBetween(12, 28),
+          vy: randomBetween(-5, 5),
+          size: randomBetween(1.4, 3.2),
+          alpha: randomBetween(0.12, 0.28),
+          life: Math.random() * Math.PI * 2
+        };
+      }
+      if (mapId === "winter") {
+        return {
+          x: Math.random() * world.w,
+          y: respawn ? -10 - Math.random() * 26 : Math.random() * world.h,
+          vx: randomBetween(-8, 8),
+          vy: randomBetween(14, 30),
+          size: randomBetween(1.6, 3.8),
+          alpha: randomBetween(0.28, 0.52),
+          life: Math.random() * Math.PI * 2
+        };
+      }
+      return null;
+    }
+
+    function resetAmbientParticles(mapId) {
+      particleMapId = mapId;
+      ambientParticles = [];
+      const count = mapId === "desert" ? 28 : mapId === "winter" ? 34 : 0;
+      for (let i = 0; i < count; i++) {
+        const particle = createAmbientParticle(mapId, false);
+        if (particle) ambientParticles.push(particle);
+      }
+    }
+
+    function ensureAmbientParticles(mapId) {
+      if (particleMapId === mapId) return;
+      resetAmbientParticles(mapId);
+    }
+
+    function updateAmbientParticles(dt, mapId) {
+      ensureAmbientParticles(mapId);
+      if (!ambientParticles.length) return;
+      for (let i = 0; i < ambientParticles.length; i++) {
+        const particle = ambientParticles[i];
+        particle.life += dt;
+        if (mapId === "desert") {
+          particle.x += particle.vx * dt;
+          particle.y += (particle.vy + Math.sin(particle.life * 1.5) * 4) * dt;
+          if (particle.x > world.w + 18 || particle.y < -20 || particle.y > world.h + 20) {
+            ambientParticles[i] = createAmbientParticle(mapId, true);
+            ambientParticles[i].y = Math.random() * world.h;
+          }
+        } else if (mapId === "winter") {
+          particle.x += (particle.vx + Math.sin(particle.life * 0.9) * 6) * dt;
+          particle.y += particle.vy * dt;
+          if (particle.y > world.h + 16) {
+            ambientParticles[i] = createAmbientParticle(mapId, true);
+            ambientParticles[i].x = Math.random() * world.w;
+          } else if (particle.x < -18) {
+            particle.x = world.w + 12;
+          } else if (particle.x > world.w + 18) {
+            particle.x = -12;
+          }
+        }
+      }
+    }
+
+    function drawAmbientParticles() {
+      if (!ambientParticles.length) return;
+      for (const particle of ambientParticles) {
+        if (particleMapId === "desert") {
+          ctx.fillStyle = `rgba(232, 208, 154, ${particle.alpha})`;
+          ctx.beginPath();
+          ctx.ellipse(particle.x, particle.y, particle.size * 1.6, particle.size, Math.sin(particle.life) * 0.25, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (particleMapId === "winter") {
+          ctx.fillStyle = `rgba(243, 250, 255, ${particle.alpha})`;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = `rgba(150, 196, 228, ${particle.alpha * 0.45})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particle.x - particle.size * 0.75, particle.y);
+          ctx.lineTo(particle.x + particle.size * 0.75, particle.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function addTrackMark(x, y, angle, mapId) {
+      trackMarks.push({
+        x,
+        y,
+        angle,
+        mapId,
+        life: trackFadeTime,
+        alpha: 0.16 + Math.random() * 0.16,
+        width: 12 + Math.random() * 2,
+        height: 4 + Math.random() * 1.5
+      });
+      if (trackMarks.length > maxTrackMarks) trackMarks.splice(0, trackMarks.length - maxTrackMarks);
+    }
+
+    function emitTrackMarksForTank(tank, key, dt, mapId) {
+      if (!tank) return;
+      const emitter = trackEmitters.get(key) || { timer: 0, lastX: tank.x, lastY: tank.y };
+      const moved = Math.hypot(tank.x - emitter.lastX, tank.y - emitter.lastY);
+      const turning = Math.abs(tank.angularVelocity || 0);
+      const moving = Math.abs(tank.driveSpeed || 0) > 12 || moved > 2.4 || turning > 0.7;
+      emitter.timer -= dt;
+      if (moving && emitter.timer <= 0) {
+        const offsetX = -Math.sin(tank.angle) * 8;
+        const offsetY = Math.cos(tank.angle) * 8;
+        const backX = tank.x - Math.cos(tank.angle) * 12;
+        const backY = tank.y - Math.sin(tank.angle) * 12;
+        addTrackMark(backX + offsetX, backY + offsetY, tank.angle, mapId);
+        addTrackMark(backX - offsetX, backY - offsetY, tank.angle, mapId);
+        emitter.timer = Math.max(0.05, 0.14 - Math.min(0.06, Math.abs(tank.driveSpeed || 0) / 900));
+      }
+      emitter.lastX = tank.x;
+      emitter.lastY = tank.y;
+      trackEmitters.set(key, emitter);
+    }
+
+    function updateTrackMarks(dt) {
+      for (let i = trackMarks.length - 1; i >= 0; i--) {
+        trackMarks[i].life -= dt;
+        if (trackMarks[i].life <= 0) trackMarks.splice(i, 1);
+      }
+    }
+
+    function drawTrackMarks() {
+      for (const mark of trackMarks) {
+        const fade = Math.max(0, mark.life / trackFadeTime);
+        let fill = `rgba(31, 25, 18, ${mark.alpha * fade})`;
+        if (mark.mapId === "grass") fill = `rgba(32, 46, 24, ${mark.alpha * fade})`;
+        if (mark.mapId === "winter") fill = `rgba(92, 116, 134, ${(mark.alpha + 0.05) * fade})`;
+        ctx.save();
+        ctx.translate(mark.x, mark.y);
+        ctx.rotate(mark.angle);
+        ctx.fillStyle = fill;
+        ctx.fillRect(-mark.width / 2, -mark.height / 2, mark.width, mark.height);
+        ctx.fillRect(-mark.width / 2 + 2, -mark.height / 2 - 1.2, 2, mark.height + 2.4);
+        ctx.fillRect(mark.width / 2 - 4, -mark.height / 2 - 1.2, 2, mark.height + 2.4);
+        ctx.restore();
+      }
+    }
+
+    function drawMapBackground(mapId) {
+      const theme = MAP_THEMES[mapId] || MAP_THEMES.grass;
+      const deco = MAP_DECORATIONS[mapId] || MAP_DECORATIONS.grass;
+
+      ctx.fillStyle = theme.ground;
+      ctx.fillRect(0, 0, world.w, world.h);
+      if (!deco) return;
+
+      const topFade = ctx.createLinearGradient(0, 0, 0, world.h);
+      if (mapId === "winter") {
+        topFade.addColorStop(0, "rgba(255, 255, 255, 0.18)");
+        topFade.addColorStop(1, "rgba(110, 150, 185, 0.06)");
+      } else if (mapId === "grass") {
+        topFade.addColorStop(0, "rgba(120, 185, 108, 0.10)");
+        topFade.addColorStop(1, "rgba(18, 42, 19, 0.08)");
+      } else {
+        topFade.addColorStop(0, "rgba(255, 231, 170, 0.10)");
+        topFade.addColorStop(1, "rgba(125, 79, 34, 0.08)");
+      }
+      ctx.fillStyle = topFade;
+      ctx.fillRect(0, 0, world.w, world.h);
+
+      if (mapId === "desert") {
+        for (const blob of deco.blobs) {
+          ctx.save();
+          ctx.translate(blob.x, blob.y);
+          ctx.rotate(blob.rot);
+          ctx.fillStyle = "rgba(245, 215, 150, 0.10)";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, blob.rx, blob.ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.strokeStyle = "rgba(120, 86, 45, 0.12)";
+        ctx.lineWidth = 2;
+        for (let y = 28; y < world.h; y += 48) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= world.w; x += 60) {
+            ctx.quadraticCurveTo(x + 30, y + ((x / 60) % 2 === 0 ? 10 : -10), x + 60, y);
+          }
+          ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(91, 67, 40, 0.28)";
+        for (const pebble of deco.pebbles) {
+          ctx.beginPath();
+          ctx.arc(pebble.x, pebble.y, pebble.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (mapId === "winter") {
+        for (const blob of deco.blobs) {
+          ctx.save();
+          ctx.translate(blob.x, blob.y);
+          ctx.rotate(blob.rot);
+          ctx.fillStyle = "rgba(130, 180, 220, 0.14)";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, blob.rx, blob.ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.10)";
+          ctx.beginPath();
+          ctx.ellipse(-blob.rx * 0.14, -blob.ry * 0.1, blob.rx * 0.65, blob.ry * 0.55, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.fillStyle = "rgba(160, 200, 228, 0.10)";
+        for (const pebble of deco.pebbles) {
+          ctx.beginPath();
+          ctx.arc(pebble.x, pebble.y, pebble.r * 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "rgba(110, 150, 186, 0.12)";
+        for (let i = 0; i < deco.blobs.length; i += 2) {
+          const blob = deco.blobs[i];
+          ctx.save();
+          ctx.translate(blob.x + blob.rx * 0.12, blob.y + blob.ry * 0.08);
+          ctx.rotate(blob.rot);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, blob.rx * 0.5, blob.ry * 0.22, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+        ctx.lineWidth = 1;
+        for (const speck of deco.specks) {
+          ctx.save();
+          ctx.translate(speck.x, speck.y);
+          ctx.rotate(speck.rot);
+          ctx.beginPath();
+          ctx.moveTo(-speck.len * 0.5, 0);
+          ctx.lineTo(speck.len * 0.5, 0);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.strokeStyle = "rgba(175, 215, 240, 0.12)";
+        ctx.lineWidth = 2;
+        for (let y = 36; y < world.h; y += 60) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= world.w; x += 64) {
+            ctx.quadraticCurveTo(x + 32, y + ((x / 64) % 2 === 0 ? 6 : -6), x + 64, y);
+          }
+          ctx.stroke();
+        }
+      } else {
+        for (const blob of deco.blobs) {
+          ctx.save();
+          ctx.translate(blob.x, blob.y);
+          ctx.rotate(blob.rot);
+          ctx.fillStyle = "rgba(24, 58, 29, 0.16)";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, blob.rx, blob.ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(85, 140, 70, 0.09)";
+          ctx.beginPath();
+          ctx.ellipse(-blob.rx * 0.1, -blob.ry * 0.08, blob.rx * 0.62, blob.ry * 0.48, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.strokeStyle = "rgba(24, 54, 21, 0.15)";
+        ctx.lineWidth = 1.4;
+        for (const speck of deco.specks) {
+          ctx.save();
+          ctx.translate(speck.x, speck.y);
+          ctx.rotate(speck.rot);
+          ctx.beginPath();
+          ctx.moveTo(-speck.len * 0.5, 0);
+          ctx.lineTo(speck.len * 0.5, 0);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.fillStyle = "rgba(49, 96, 42, 0.34)";
+        for (const pebble of deco.pebbles) {
+          ctx.beginPath();
+          ctx.arc(pebble.x, pebble.y, Math.max(1.5, pebble.r - 0.9), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "rgba(29, 71, 24, 0.18)";
+        for (let i = 0; i < deco.pebbles.length; i += 2) {
+          const pebble = deco.pebbles[i];
+          ctx.beginPath();
+          ctx.ellipse(pebble.x, pebble.y, pebble.r * 1.8, pebble.r * 1.2, (i % 5) * 0.35, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = "rgba(125, 186, 99, 0.11)";
+        ctx.lineWidth = 1.6;
+        for (let y = 30; y < world.h; y += 54) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= world.w; x += 72) {
+            ctx.quadraticCurveTo(x + 36, y + ((x / 72) % 2 === 0 ? 8 : -8), x + 72, y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      ctx.fillStyle = theme.tint;
+      ctx.fillRect(0, 0, world.w, world.h);
+    }
+
     function render() {
+      const activeMapId = mode === "online" ? (onlineState?.mapId || currentMap || "grass") : currentMap;
+      currentMap = activeMapId;
       ctx.clearRect(0, 0, world.w, world.h);
-      ctx.fillStyle = "rgba(255,255,255,0.05)";
-      for (let x = 0; x < world.w; x += 40) ctx.fillRect(x, 0, 1, world.h);
-      for (let y = 0; y < world.h; y += 40) ctx.fillRect(0, y, world.w, 1);
-      drawRoundHud();
+      drawMapBackground(activeMapId);
+      drawAmbientParticles();
+      drawTrackMarks();
 
       if (mode === "online" && onlineState) {
+        drawAirdrops(onlineState.airdrops);
+        drawLightCover(onlineState.lightCover);
         const p0 = onlineState.players?.[0];
         const p1 = onlineState.players?.[1];
         const p0Camo = CAMOS[p0?.camoId || onlineState.camos?.[0]] || CAMOS.classic;
@@ -1391,6 +2656,8 @@
         ctx.fillText(`P1 HP: ${p0 ? p0.hp : "-"}`, 16, 24);
         ctx.fillText(`P2 HP: ${p1 ? p1.hp : "-"}`, world.w - 96, 24);
       } else {
+        drawAirdrops(airdrops);
+        drawLightCover(lightCover);
         drawWalls(walls);
         drawBullets(bullets);
         drawTank(player);
@@ -1405,10 +2672,12 @@
         ctx.fillText(`AI HP: ${enemy.hp}`, world.w - 96, 24);
       }
 
+      drawRoundHud();
+
       if (mode === "ai" && gameOver) drawOverlay(winner, "Press R to restart");
       else if (mode === "ai" && !gameStarted) drawOverlay("Press R to start");
       else if (mode === "online" && gameOver) drawOverlay(winner, "Press Play Online");
-      else if (mode === "online" && !gameStarted) drawOverlay("Online mode", onlineSearchActive ? "Searching for player..." : (statusEl.textContent || "Press Play Online"));
+      else if (mode === "online" && !gameStarted && !lobbyCountdownSeconds) drawOverlay("Online mode", onlineSearchActive ? "Searching for player..." : (statusEl.textContent || "Press Play Online"));
       drawCrosshair();
     }
 
@@ -1436,10 +2705,12 @@
 
     function resetOnlineSessionState() {
       finishCreateLobbyRequest(false);
+      hideLobbyCountdown();
       gameOver = false;
       gameStarted = false;
       winner = "";
       onlineState = null;
+      airdrops = [];
       myId = null;
       shootQueued = false;
       onlineShootSoundCd = 0;
@@ -1447,6 +2718,7 @@
       activeLobbyCode = "";
       myLobbyState = null;
       lobbyList = [];
+      resetTrackMarks();
       hideCreateLobbyForm();
       hideJoinPasswordForm();
       cancelSearchBtn.classList.add("hidden");
@@ -1457,8 +2729,64 @@
       lobbyMetaEl.textContent = text || "";
     }
 
+    function showLobbyCountdown(secondsLeft) {
+      const seconds = Math.max(1, Math.floor(Number(secondsLeft) || 0));
+      if (!seconds) return;
+      lobbyCountdownSeconds = seconds;
+      if (lobbyCountdownOverlayEl) {
+        lobbyCountdownOverlayEl.textContent = `Game starts in ${seconds}...`;
+        lobbyCountdownOverlayEl.classList.remove("hidden");
+      }
+    }
+
+    function hideLobbyCountdown() {
+      lobbyCountdownSeconds = 0;
+      if (!lobbyCountdownOverlayEl) return;
+      lobbyCountdownOverlayEl.textContent = "";
+      lobbyCountdownOverlayEl.classList.add("hidden");
+    }
+
     function setLobbiesModalOpen(open) {
       lobbiesModalEl.classList.toggle("hidden", !open);
+    }
+
+    function normalizeClientMapId(mapId) {
+      return MAP_THEMES[mapId] ? mapId : "grass";
+    }
+
+    function updateCreateLobbyMapButtons() {
+      for (const btn of createLobbyMapButtons) {
+        btn.setAttribute("aria-pressed", String(btn.dataset.map === selectedCreateLobbyMapId));
+      }
+    }
+
+    function setCreateLobbyPreview(mapId) {
+      const normalized = normalizeClientMapId(mapId);
+      if (createLobbyPreviewTitle) createLobbyPreviewTitle.textContent = MAP_LABELS[normalized] || "Green Biome";
+      if (createLobbyPreviewDesc) createLobbyPreviewDesc.textContent = MAP_PREVIEW_TEXT[normalized] || MAP_PREVIEW_TEXT.grass;
+      if (createLobbyPreviewStage) {
+        createLobbyPreviewStage.classList.add("preview-animating");
+        createLobbyPreviewStage.dataset.map = normalized;
+        clearTimeout(createLobbyPreviewStage._animTimeout);
+        createLobbyPreviewStage._animTimeout = setTimeout(() => {
+          createLobbyPreviewStage.classList.remove("preview-animating");
+        }, 170);
+      }
+    }
+
+    function setCreateLobbyMap(mapId, previewOnly = false) {
+      const normalized = normalizeClientMapId(mapId);
+      if (!previewOnly) {
+        selectedCreateLobbyMapId = normalized;
+        updateCreateLobbyMapButtons();
+      }
+      hoveredCreateLobbyMapId = previewOnly ? normalized : "";
+      setCreateLobbyPreview(normalized);
+    }
+
+    function restoreCreateLobbyPreview() {
+      hoveredCreateLobbyMapId = "";
+      setCreateLobbyPreview(selectedCreateLobbyMapId);
     }
 
     function openLobbiesModal() {
@@ -1480,8 +2808,13 @@
       createLobbyNameInput.value = "";
       createLobbyPasswordInput.value = "";
       createLobbyModeInput.value = "1v1";
+      createLobbyArenaSizeInput.value = "standard";
+      selectedCreateLobbyMapId = "grass";
+      hoveredCreateLobbyMapId = "";
       createLobbySubmitBtn.disabled = false;
       setCreateLobbyNameError("");
+      updateCreateLobbyMapButtons();
+      setCreateLobbyPreview(selectedCreateLobbyMapId);
       createLobbyFormLayerEl.classList.remove("hidden");
       createLobbyNameInput.focus();
     }
@@ -1533,6 +2866,8 @@
       }
       pendingCreatedLobbyMode = "";
       pendingCreatedLobbyMaxPlayers = 0;
+      pendingCreatedLobbyMapId = "";
+      pendingCreatedLobbyArenaSizeId = "standard";
       if (errorMessage) setLobbyMeta(errorMessage);
     }
 
@@ -1550,6 +2885,8 @@
       const lobbyName = (createLobbyNameInput.value || "").trim();
       const password = (createLobbyPasswordInput.value || "").trim();
       const mode = createLobbyModeInput.value || "1v1";
+      const arenaSizeId = normalizeArenaSizeId(createLobbyArenaSizeInput.value || "standard");
+      const mapId = normalizeClientMapId(selectedCreateLobbyMapId);
       if (!lobbyName) {
         setCreateLobbyNameError("Lobby name is required.");
         createLobbyNameInput.focus();
@@ -1559,8 +2896,10 @@
       setCreateLobbyNameError("");
       pendingCreatedLobbyMode = mode;
       pendingCreatedLobbyMaxPlayers = LOBBY_MODE_LIMITS[mode] || 2;
+      pendingCreatedLobbyMapId = mapId;
+      pendingCreatedLobbyArenaSizeId = arenaSizeId;
       startCreateLobbyRequest();
-      connectOnline({ type: "create_lobby", lobbyName, password, mode }, false);
+      connectOnline({ type: "create_lobby", lobbyName, password, mode, mapId, arenaSizeId }, false);
     }
 
     function showJoinPasswordForm(code, lobbyName = "Lobby") {
@@ -1579,7 +2918,7 @@
 
     function sendOnlineAction(socket, action) {
       if (!socket || socket.readyState !== WebSocket.OPEN) return;
-      const nickname = formatNickname(nicknameInput.value, "PLAYER");
+      const nickname = getOnlineNickname();
       const camo = selectedCamoId;
       if (action?.type === "create_lobby") {
         modeMetaEl.textContent = "";
@@ -1589,6 +2928,8 @@
           lobbyName: action.lobbyName || "",
           password: action.password || "",
           mode: action.mode || "1v1",
+          mapId: action.mapId || "grass",
+          arenaSizeId: action.arenaSizeId || "standard",
           camo
         }));
         return;
@@ -1646,15 +2987,23 @@
         title.textContent = `${currentLobbyView.lobbyName || "Lobby"}`;
         const creator = document.createElement("div");
         creator.className = "lobby-item-line";
-        creator.textContent = `Creator: ${currentLobbyView.creatorNickname}`;
+        creator.textContent = `Creator: ${formatLobbyNickname(currentLobbyView.creatorNickname, "Creator")}`;
         const mode = document.createElement("div");
         mode.className = "lobby-item-line";
         mode.textContent = `Mode: ${currentLobbyView.mode || "1v1"}`;
+        const arena = document.createElement("div");
+        arena.className = "lobby-item-line";
+        arena.textContent = `Arena: ${ARENA_SIZE_LABELS[currentLobbyView.arenaSizeId] || "Standard"}`;
+        const map = document.createElement("div");
+        map.className = "lobby-item-line";
+        map.textContent = `Map: ${MAP_LABELS[currentLobbyView.mapId] || "Green Biome"}`;
         const players = document.createElement("div");
         players.className = "lobby-item-line";
         players.style.marginBottom = "8px";
         const names = Array.isArray(currentLobbyView.memberNicknames) ? currentLobbyView.memberNicknames : [];
-        const membersText = names.length > 0 ? names.join(", ") : "Waiting for player...";
+        const membersText = names.length > 0
+          ? names.map((name) => formatLobbyNickname(name, "PLAYER")).join(", ")
+          : "Waiting for player...";
         players.textContent = `Players: ${currentLobbyView.playerCount || names.length || 1}/${currentLobbyView.maxPlayers || 2} (${membersText})`;
         const codeChip = document.createElement("button");
         codeChip.type = "button";
@@ -1665,21 +3014,33 @@
             setLobbyMeta(ok ? "Lobby code copied." : "Unable to copy lobby code.");
           });
         });
-        myLobbyCardEl.append(title, creator, mode, players, codeChip);
+        myLobbyCardEl.append(title, creator, mode, arena, map, players, codeChip);
 
         const actions = document.createElement("div");
         actions.style.display = "flex";
         actions.style.gap = "8px";
         actions.style.alignItems = "center";
 
-        if (myLobbyState.isCreator && myLobbyState.canStart) {
+        if (myLobbyState.isCreator) {
           const startBtn = document.createElement("button");
           startBtn.type = "button";
           startBtn.className = "main-action-btn";
           startBtn.style.height = "34px";
           startBtn.style.width = "160px";
-          startBtn.textContent = "Start Game";
-          startBtn.addEventListener("click", () => connectOnline({ type: "start_lobby_game" }, false));
+          if (myLobbyState.countdownActive || lobbyCountdownSeconds > 0) {
+            startBtn.textContent = "Starting...";
+            startBtn.disabled = true;
+          } else if (myLobbyState.canStart) {
+            startBtn.textContent = "Start Game";
+            startBtn.addEventListener("click", () => {
+              startBtn.disabled = true;
+              startBtn.textContent = "Starting...";
+              connectOnline({ type: "start_lobby_game" }, false);
+            });
+          } else {
+            startBtn.textContent = "Not enough players";
+            startBtn.disabled = true;
+          }
           actions.appendChild(startBtn);
         }
 
@@ -1725,16 +3086,24 @@
         name.textContent = `${lobby.lobbyName || "Lobby"}${lockMark}`;
         const creator = document.createElement("div");
         creator.className = "lobby-item-line";
-        creator.textContent = `Creator: ${lobby.creatorNickname}`;
+        creator.textContent = `Creator: ${formatLobbyNickname(lobby.creatorNickname, "Creator")}`;
         const mode = document.createElement("div");
         mode.className = "lobby-item-line";
         mode.textContent = `Mode: ${lobby.mode || "1v1"}`;
+        const arena = document.createElement("div");
+        arena.className = "lobby-item-line";
+        arena.textContent = `Arena: ${ARENA_SIZE_LABELS[lobby.arenaSizeId] || "Standard"}`;
+        const map = document.createElement("div");
+        map.className = "lobby-item-line";
+        map.textContent = `Map: ${MAP_LABELS[lobby.mapId] || "Green Biome"}`;
         const members = document.createElement("div");
         members.className = "lobby-item-line";
         const names = Array.isArray(lobby.memberNicknames) ? lobby.memberNicknames : [];
-        const membersText = names.length > 0 ? names.join(", ") : (lobby.joinedNickname || "Waiting for player...");
+        const membersText = names.length > 0
+          ? names.map((name) => formatLobbyNickname(name, "PLAYER")).join(", ")
+          : (lobby.joinedNickname ? formatLobbyNickname(lobby.joinedNickname, "PLAYER") : "Waiting for player...");
         members.textContent = `Players: ${lobby.playerCount}/${lobby.maxPlayers || 2} (${membersText})`;
-        info.append(name, creator, mode, members);
+        info.append(name, creator, mode, arena, map, members);
 
         const joinBtn = document.createElement("button");
         joinBtn.type = "button";
@@ -1769,8 +3138,23 @@
       return {
         ...lobby,
         mode: pendingCreatedLobbyMode,
-        maxPlayers: pendingCreatedLobbyMaxPlayers || lobby.maxPlayers || 2
+        maxPlayers: pendingCreatedLobbyMaxPlayers || lobby.maxPlayers || 2,
+        mapId: pendingCreatedLobbyMapId || lobby.mapId || "grass",
+        arenaSizeId: pendingCreatedLobbyArenaSizeId || lobby.arenaSizeId || "standard"
       };
+    }
+
+    function syncOnlineArmorBreakSound(prevState, nextState) {
+      const prevPlayers = prevState?.players || [];
+      const nextPlayers = nextState?.players || [];
+      for (let i = 0; i < nextPlayers.length; i++) {
+        const prevTank = prevPlayers[i];
+        const nextTank = nextPlayers[i];
+        if (!prevTank || !nextTank) continue;
+        if (prevTank.hasArmor && !nextTank.hasArmor && (nextTank.armorPop || 0) > 0) {
+          playArmorBreakSound();
+        }
+      }
     }
 
     function createOnlineSocket() {
@@ -1813,13 +3197,31 @@
             statusEl.textContent = `Lobby ${myLobbyState.code}`;
             modeMetaEl.textContent = `Lobby code: ${myLobbyState.code}`;
             setLobbyMeta(`${waitingText}`);
+            if (myLobbyState.countdownActive && (myLobbyState.countdownValue || 0) > 0) {
+              showLobbyCountdown(myLobbyState.countdownValue);
+            } else {
+              hideLobbyCountdown();
+            }
           } else {
             cancelSearchBtn.classList.add("hidden");
             setLobbyMeta("");
+            hideLobbyCountdown();
           }
           renderLobbiesUi();
         }
+        if (msg.type === "lobby_countdown") {
+          const secondsLeft = Math.max(1, Math.floor(Number(msg.secondsLeft) || 0));
+          showLobbyCountdown(secondsLeft);
+          setLobbyMeta(`Game starts in ${secondsLeft}...`);
+          renderLobbiesUi();
+        }
+        if (msg.type === "lobby_countdown_cancelled") {
+          hideLobbyCountdown();
+          setLobbyMeta(msg.message || "Countdown cancelled.");
+          renderLobbiesUi();
+        }
         if (msg.type === "queue") {
+          hideLobbyCountdown();
           onlineSearchActive = true;
           cancelSearchBtn.classList.remove("hidden");
           gameStarted = false;
@@ -1837,6 +3239,8 @@
             pendingCreatedLobbyMode = msg.mode;
             pendingCreatedLobbyMaxPlayers = msg.maxPlayers || LOBBY_MODE_LIMITS[msg.mode] || 2;
           }
+          if (msg.mapId) pendingCreatedLobbyMapId = normalizeClientMapId(msg.mapId);
+          if (msg.arenaSizeId) pendingCreatedLobbyArenaSizeId = normalizeArenaSizeId(msg.arenaSizeId);
           cancelSearchBtn.classList.remove("hidden");
           statusEl.textContent = `Lobby ${activeLobbyCode} created. Waiting...`;
           modeMetaEl.textContent = "";
@@ -1856,6 +3260,7 @@
         }
         if (msg.type === "cancelled") {
           finishCreateLobbyRequest(false, msg.message || "Lobby creation cancelled.");
+          hideLobbyCountdown();
           onlineSearchActive = false;
           activeLobbyCode = "";
           myLobbyState = null;
@@ -1867,6 +3272,7 @@
         }
         if (msg.type === "error") {
           finishCreateLobbyRequest(false, msg.message || "Unable to create lobby.");
+          hideLobbyCountdown();
           onlineSearchActive = false;
           cancelSearchBtn.classList.add("hidden");
           statusEl.textContent = msg.message || "Online error";
@@ -1875,12 +3281,15 @@
           if (!lobbiesModalEl.classList.contains("hidden")) sendOnlineAction(socket, { type: "list_lobbies" });
         }
         if (msg.type === "start") {
+          hideLobbyCountdown();
           onlineSearchActive = false;
           myLobbyState = null;
           activeLobbyCode = "";
           renderLobbiesUi();
           cancelSearchBtn.classList.add("hidden");
+          syncOnlineArmorBreakSound(onlineState, msg.state);
           onlineState = msg.state;
+          applyArenaSize(msg.state?.mode || "1v1", msg.state?.arenaSizeId || "standard", msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
           gameStarted = true;
           gameOver = false;
           winner = "";
@@ -1889,7 +3298,11 @@
           closeLobbiesModal();
           if (appScreen !== "game") openGameScreen();
         }
-        if (msg.type === "state") onlineState = msg.state;
+        if (msg.type === "state") {
+          syncOnlineArmorBreakSound(onlineState, msg.state);
+          onlineState = msg.state;
+          if (msg.state?.mode) applyArenaSize(msg.state.mode, msg.state?.arenaSizeId || "standard", msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
+        }
         if (msg.type === "end") {
           gameOver = true;
           gameStarted = false;
@@ -1915,6 +3328,7 @@
       socket.onclose = () => {
         if (onlineSocket && onlineSocket !== socket) return;
         if (onlineSocket === socket) onlineSocket = null;
+        hideLobbyCountdown();
         if (createLobbyPending) finishCreateLobbyRequest(false, "Unable to create lobby. Server disconnected.");
         onlineSearchActive = false;
         myLobbyState = null;
@@ -1970,6 +3384,7 @@
 
     function cancelOnlineSearch() {
       if (mode !== "online") return;
+      hideLobbyCountdown();
       onlineSearchActive = false;
       cancelSearchBtn.classList.add("hidden");
       if (onlineSocket && onlineSocket.readyState === WebSocket.OPEN) {
@@ -2017,6 +3432,7 @@
 
     function goToMainMenu() {
       reconnectAfterClose = false;
+      hideLobbyCountdown();
       if (onlineSocket) {
         onlineSocket._expectedClose = true;
         onlineSocket.close();
@@ -2028,8 +3444,10 @@
       closeLobbiesModal();
       myLobbyState = null;
       lobbyList = [];
+      airdrops = [];
       renderLobbiesUi();
       setMode("ai");
+      applyArenaSize("1v1", "standard");
       enterWaitingState();
       playMenuMusic();
     }
@@ -2038,6 +3456,9 @@
       const dt = Math.max(0, Math.min(0.033, (ts - lastTime) / 1000));
       lastTime = ts;
       onlineShootSoundCd = Math.max(0, onlineShootSoundCd - dt);
+      const activeMapId = mode === "online" ? (onlineState?.mapId || currentMap || "grass") : currentMap;
+      updateAmbientParticles(dt, activeMapId);
+      updateTrackMarks(dt);
       if (appScreen !== "game") {
         requestAnimationFrame(tick);
         return;
@@ -2047,6 +3468,7 @@
           updatePlayer(dt);
           updateEnemy(dt);
           updateBullets(dt);
+          updateLocalAirdrop(dt);
           roundTimer -= dt;
           if (roundTimer <= 0) resolveAiTimerRound();
         } else {
@@ -2061,7 +3483,14 @@
             }
           }
         }
+        emitTrackMarksForTank(player, "ai-player", dt, activeMapId);
+        emitTrackMarksForTank(enemy, "ai-enemy", dt, activeMapId);
       } else if (mode === "online") {
+        if (onlineState?.mode) applyArenaSize(onlineState.mode, onlineState?.arenaSizeId || "standard", onlineState?.mapWidth || 0, onlineState?.mapHeight || 0);
+        if (gameStarted && onlineState?.players) {
+          emitTrackMarksForTank(onlineState.players[0], "online-p0", dt, activeMapId);
+          emitTrackMarksForTank(onlineState.players[1], "online-p1", dt, activeMapId);
+        }
         sendOnlineInput();
       }
       render();
@@ -2081,85 +3510,140 @@
     window.addEventListener("pointerdown", unlockAudioAndSync, { once: true });
     window.addEventListener("keydown", unlockAudioAndSync, { once: true });
     window.addEventListener("keyup", (e) => keys.delete(e.code));
-    menuPlayAiBtn.addEventListener("click", () => startFromMainMenu("ai"));
-    menuPlayOnlineRandomBtn.addEventListener("click", () => startFromMainMenu("online", { type: "join_random" }));
-    menuOpenLobbiesBtn.addEventListener("click", () => openLobbiesModal());
-    lobbiesCloseBtn.addEventListener("click", () => closeLobbiesModal());
-    lobbiesBackdropEl.addEventListener("click", () => closeLobbiesModal());
-    menuCreateLobbyBtn.addEventListener("click", () => showCreateLobbyForm());
-    menuJoinLobbyBtn.addEventListener("click", () => {
-      const code = (menuJoinLobbyInput.value || "").trim().toUpperCase();
-      if (!code) {
-        setLobbyMeta("Enter lobby code");
+    document.addEventListener("click", (e) => {
+      const target = e.target.closest("button, .camo-btn, .map-choice-btn, #lobbiesBackdrop");
+      if (!target) return;
+
+      if (target.id === "menuPlayAiBtn") {
+        startFromMainMenu("ai");
         return;
       }
-      const lobby = lobbyList.find((item) => item.code === code);
-      if (lobby?.hasPassword) {
-        showJoinPasswordForm(code, lobby.lobbyName || "Lobby");
-      } else {
-        connectOnline({ type: "join_lobby", code }, false);
+      if (target.id === "menuPlayOnlineRandomBtn") {
+        startFromMainMenu("online", { type: "join_random" });
+        return;
+      }
+      if (target.id === "menuOpenLobbiesBtn") {
+        openLobbiesModal();
+        return;
+      }
+      if (target.id === "lobbiesCloseBtn" || target.id === "lobbiesBackdrop") {
+        closeLobbiesModal();
+        return;
+      }
+      if (target.id === "menuCreateLobbyBtn") {
+        showCreateLobbyForm();
+        return;
+      }
+      if (target.id === "menuJoinLobbyBtn") {
+        const code = (menuJoinLobbyInput.value || "").trim().toUpperCase();
+        if (!code) {
+          setLobbyMeta("Enter lobby code");
+          return;
+        }
+        const lobby = lobbyList.find((item) => item.code === code);
+        if (lobby?.hasPassword) showJoinPasswordForm(code, lobby.lobbyName || "Lobby");
+        else connectOnline({ type: "join_lobby", code }, false);
+        return;
+      }
+      if (target.id === "createLobbyCancelBtn") {
+        hideCreateLobbyForm();
+        return;
+      }
+      if (target.id === "createLobbySubmitBtn") {
+        submitCreateLobby();
+        return;
+      }
+      if (target.id === "joinPasswordCancelBtn") {
+        hideJoinPasswordForm();
+        return;
+      }
+      if (target.id === "joinPasswordSubmitBtn") {
+        const code = pendingJoinLobbyCode;
+        const password = (joinPasswordInput.value || "").trim();
+        if (!code) return;
+        if (!password) {
+          setLobbyMeta("Enter password");
+          joinPasswordInput.focus();
+          return;
+        }
+        connectOnline({ type: "join_lobby", code, password }, false);
+        return;
+      }
+      if (target.id === "cancelSearchBtn") {
+        cancelOnlineSearch();
+        return;
+      }
+      if (target.id === "backToMenuBtn") {
+        goToMainMenu();
+        return;
+      }
+      if (target.classList.contains("camo-btn")) {
+        selectedCamoId = target.dataset.camo;
+        for (const item of camoButtons) item.setAttribute("aria-pressed", String(item === target));
+        if (player) player.camo = CAMOS[selectedCamoId];
+        canvas.focus();
+        return;
+      }
+      if (target.classList.contains("map-choice-btn")) {
+        setCreateLobbyMap(target.dataset.map || "grass");
       }
     });
-    createLobbyCancelBtn.addEventListener("click", () => hideCreateLobbyForm());
-    createLobbySubmitBtn.addEventListener("click", () => submitCreateLobby());
-    createLobbyNameInput.addEventListener("keydown", (e) => {
+    createLobbyNameInput?.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
       submitCreateLobby();
     });
-    createLobbyPasswordInput.addEventListener("keydown", (e) => {
+    createLobbyPasswordInput?.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
       submitCreateLobby();
     });
-    createLobbyModeInput.addEventListener("keydown", (e) => {
+    createLobbyModeInput?.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
       submitCreateLobby();
     });
-    createLobbyNameInput.addEventListener("input", () => {
+    createLobbyArenaSizeInput?.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      submitCreateLobby();
+    });
+    createLobbyMapChoices?.addEventListener("mouseover", (e) => {
+      const btn = e.target.closest(".map-choice-btn");
+      if (!btn) return;
+      setCreateLobbyMap(btn.dataset.map || "grass", true);
+    });
+    createLobbyMapChoices?.addEventListener("mouseleave", () => restoreCreateLobbyPreview());
+    createLobbyMapChoices?.addEventListener("focusin", (e) => {
+      const btn = e.target.closest(".map-choice-btn");
+      if (!btn) return;
+      setCreateLobbyMap(btn.dataset.map || "grass", true);
+    });
+    createLobbyMapChoices?.addEventListener("focusout", () => restoreCreateLobbyPreview());
+    createLobbyNameInput?.addEventListener("input", () => {
       if ((createLobbyNameInput.value || "").trim()) setCreateLobbyNameError("");
     });
-    joinPasswordCancelBtn.addEventListener("click", () => hideJoinPasswordForm());
-    joinPasswordSubmitBtn.addEventListener("click", () => {
-      const code = pendingJoinLobbyCode;
-      const password = (joinPasswordInput.value || "").trim();
-      if (!code) return;
-      if (!password) {
-        setLobbyMeta("Enter password");
-        joinPasswordInput.focus();
-        return;
-      }
-      connectOnline({ type: "join_lobby", code, password }, false);
-    });
-    cancelSearchBtn.addEventListener("click", () => cancelOnlineSearch());
-    backToMenuBtn.addEventListener("click", () => goToMainMenu());
 
-    canvas.addEventListener("mousemove", (e) => {
+    canvas?.addEventListener("mousemove", (e) => {
       const rect = canvas.getBoundingClientRect();
       mouseX = (e.clientX - rect.left) * (world.w / rect.width);
       mouseY = (e.clientY - rect.top) * (world.h / rect.height);
       hasMouse = true;
     });
-    canvas.addEventListener("mouseenter", () => { hasMouse = true; });
-    canvas.addEventListener("mouseleave", () => { hasMouse = false; });
-    canvas.addEventListener("mousedown", (e) => {
+    canvas?.addEventListener("mouseenter", () => { hasMouse = true; });
+    canvas?.addEventListener("mouseleave", () => { hasMouse = false; });
+    canvas?.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
       if (mode === "ai") shoot(player, "player");
       if (mode === "online") shootQueued = true;
       canvas.focus();
     });
-
-    camoGrid.addEventListener("click", (e) => {
-      const btn = e.target.closest(".camo-btn");
-      if (!btn) return;
-      selectedCamoId = btn.dataset.camo;
-      for (const item of camoButtons) item.setAttribute("aria-pressed", String(item === btn));
-      if (player) player.camo = CAMOS[selectedCamoId];
-      canvas.focus();
+    mapSelect?.addEventListener("change", () => {
+      currentMap = mapSelect.value || "grass";
     });
 
+    applyArenaSize("1v1", "standard");
     resetAiRound();
     enterWaitingState();
     renderLobbiesUi();

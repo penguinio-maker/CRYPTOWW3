@@ -14,11 +14,32 @@ const friction = 5.2;
 const turnSpeed = 3.4;
 const turretTurnSpeed = 6.4;
 const recoilStrength = 18;
+const maxTankHp = 3;
+const airdropSpawnMin = 11;
+const airdropSpawnMax = 18;
+const airdropFallSpeed = 88;
+const airdropPickupSize = 18;
+const totalDropWaves = 3;
+const dropsPerWave = 3;
+const dropWaveTimes = [0.2, roundTime * totalRounds * 0.5, roundTime * totalRounds * 0.82];
+const LOBBY_START_COUNTDOWN_SECONDS = 5;
+const MAP_IDS = ["grass", "desert", "winter"];
 const LOBBY_MODE_LIMITS = {
   "1v1": 2,
   "2v2": 4,
   "3v3": 6,
   "4v4": 8
+};
+const MODE_MAP_SIZE = {
+  "1v1": { w: 960, h: 540 },
+  "2v2": { w: 960, h: 540 },
+  "3v3": { w: 1100, h: 620 },
+  "4v4": { w: 1240, h: 700 }
+};
+const ARENA_SIZE_PRESETS = {
+  standard: null,
+  large: MODE_MAP_SIZE["3v3"],
+  xl: MODE_MAP_SIZE["4v4"]
 };
 
 const clients = { player0: null, player1: null };
@@ -35,24 +56,166 @@ let wss = null;
 
 let state = null;
 let matchState = null;
+let currentMapId = "grass";
+let currentModeId = "1v1";
+let currentArenaSizeId = "standard";
 
-function baseWalls() {
+function normalizeArenaSizeId(arenaSizeId) {
+  const value = typeof arenaSizeId === "string" ? arenaSizeId.trim() : "";
+  return Object.prototype.hasOwnProperty.call(ARENA_SIZE_PRESETS, value) ? value : "standard";
+}
+
+function getArenaSize(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+  const override = ARENA_SIZE_PRESETS[normalizeArenaSizeId(arenaSizeId)];
+  return override || MODE_MAP_SIZE[modeId] || MODE_MAP_SIZE["1v1"];
+}
+
+function getLargeModeProfile(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+  if (modeId === "4v4" || arenaSizeId === "xl") return "4v4";
+  if (modeId === "3v3" || arenaSizeId === "large") return "3v3";
+  return "small";
+}
+
+function isLargeTeamMode(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+  return getLargeModeProfile(modeId, arenaSizeId) !== "small";
+}
+
+function getModeTankScale(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+  const profile = getLargeModeProfile(modeId, arenaSizeId);
+  if (profile === "4v4") return 1.18;
+  if (profile === "3v3") return 1.12;
+  return 1;
+}
+
+function getModeBulletRadius(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+  const profile = getLargeModeProfile(modeId, arenaSizeId);
+  if (profile === "4v4") return 5.2;
+  if (profile === "3v3") return 4.7;
+  return 4;
+}
+
+function coverStylesForMap(mapId) {
+  if (mapId === "desert") return ["rock", "crate", "sandbag", "crate", "rock"];
+  if (mapId === "winter") return ["ice", "crate", "barrier", "crate", "ice"];
+  return ["rock", "crate", "log", "crate", "rock"];
+}
+
+function coverHpForStyle(style) {
+  if (style === "rock" || style === "ice") return Infinity;
+  if (style === "sandbag") return 4;
+  return 3;
+}
+
+function buildLightCover(width, height, mapId) {
+  const cx = width / 2;
+  const cy = height / 2;
+  let items;
+  if (mapId === "desert") {
+    items = [
+      { x: cx - 240, y: cy - 150, w: 46, h: 24, style: "dune-grass" },
+      { x: cx + 224, y: cy + 138, w: 42, h: 18, style: "scrap" },
+      { x: cx - 24, y: cy + 184, w: 54, h: 20, style: "sand-debris" }
+    ];
+  } else if (mapId === "winter") {
+    items = [
+      { x: cx - 228, y: cy - 146, w: 44, h: 26, style: "snowpile" },
+      { x: cx + 236, y: cy + 136, w: 38, h: 22, style: "snowpile" },
+      { x: cx + 10, y: cy - 196, w: 48, h: 18, style: "frost-shard" }
+    ];
+  } else {
+    items = [
+      { x: cx - 232, y: cy - 146, w: 42, h: 24, style: "bush" },
+      { x: cx + 228, y: cy + 138, w: 40, h: 22, style: "bush" },
+      { x: cx + 12, y: cy - 192, w: 34, h: 20, style: "stump" }
+    ];
+  }
+  const profile = getLargeModeProfile();
+  if (profile === "small") return items;
+  const extra = mapId === "desert"
+    ? [
+        { x: width * 0.14, y: height * 0.18, w: 46, h: 18, style: "sand-debris" },
+        { x: width * 0.86, y: height * 0.18, w: 46, h: 18, style: "scrap" },
+        { x: width * 0.14, y: height * 0.82, w: 44, h: 18, style: "dune-grass" },
+        { x: width * 0.86, y: height * 0.82, w: 44, h: 18, style: "sand-debris" },
+        { x: width * 0.50, y: height * 0.10, w: 54, h: 18, style: "scrap" },
+        { x: width * 0.50, y: height * 0.90, w: 54, h: 18, style: "dune-grass" }
+      ]
+    : mapId === "winter"
+      ? [
+          { x: width * 0.14, y: height * 0.18, w: 44, h: 24, style: "snowpile" },
+          { x: width * 0.86, y: height * 0.18, w: 44, h: 24, style: "frost-shard" },
+          { x: width * 0.14, y: height * 0.82, w: 44, h: 24, style: "snowpile" },
+          { x: width * 0.86, y: height * 0.82, w: 44, h: 24, style: "snowpile" },
+          { x: width * 0.50, y: height * 0.10, w: 52, h: 18, style: "frost-shard" },
+          { x: width * 0.50, y: height * 0.90, w: 52, h: 18, style: "snowpile" }
+        ]
+      : [
+          { x: width * 0.14, y: height * 0.18, w: 40, h: 22, style: "bush" },
+          { x: width * 0.86, y: height * 0.18, w: 40, h: 22, style: "stump" },
+          { x: width * 0.14, y: height * 0.82, w: 40, h: 22, style: "bush" },
+          { x: width * 0.86, y: height * 0.82, w: 40, h: 22, style: "bush" },
+          { x: width * 0.50, y: height * 0.10, w: 48, h: 18, style: "stump" },
+          { x: width * 0.50, y: height * 0.90, w: 48, h: 18, style: "bush" }
+        ];
+  return [...items, ...extra];
+}
+
+function baseWalls(width, height, mapId) {
+  const cx = width / 2;
+  const cy = height / 2;
+  const sideWallW = 100;
+  const sideWallH = 60;
+  const centerWallW = 80;
+  const centerWallH = 60;
+  const xOffset = Math.min(180, Math.max(120, width * 0.17));
+  const yOffset = Math.min(96, Math.max(60, height * 0.11));
+  const styles = coverStylesForMap(mapId);
+  const walls = [
+    { x: cx - xOffset - sideWallW / 2, y: cy - yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[0]), style: styles[0] },
+    { x: cx - xOffset - sideWallW / 2, y: cy + yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[1]), style: styles[1] },
+    { x: cx + xOffset - sideWallW / 2, y: cy - yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[2]), style: styles[2] },
+    { x: cx + xOffset - sideWallW / 2, y: cy + yOffset - sideWallH / 2, w: sideWallW, h: sideWallH, hp: coverHpForStyle(styles[3]), style: styles[3] },
+    { x: cx - centerWallW / 2, y: cy - centerWallH / 2, w: centerWallW, h: centerWallH, hp: coverHpForStyle(styles[4]), style: styles[4] }
+  ];
+  const profile = getLargeModeProfile();
+  if (profile === "small") return walls;
+  const extraTemplates = [
+    { x: width * 0.22, y: height * 0.22, w: 88, h: 42, style: styles[1] },
+    { x: width * 0.78, y: height * 0.22, w: 88, h: 42, style: styles[2] },
+    { x: width * 0.22, y: height * 0.78, w: 88, h: 42, style: styles[3] },
+    { x: width * 0.78, y: height * 0.78, w: 88, h: 42, style: styles[0] },
+    { x: width * 0.50, y: height * 0.16, w: 76, h: 34, style: styles[4] },
+    { x: width * 0.50, y: height * 0.84, w: 76, h: 34, style: styles[4] }
+  ];
+  if (profile === "4v4") {
+    extraTemplates.push(
+      { x: width * 0.10, y: height * 0.34, w: 70, h: 32, style: styles[1] },
+      { x: width * 0.90, y: height * 0.34, w: 70, h: 32, style: styles[2] },
+      { x: width * 0.10, y: height * 0.66, w: 70, h: 32, style: styles[3] },
+      { x: width * 0.90, y: height * 0.66, w: 70, h: 32, style: styles[0] }
+    );
+  }
   return [
-    { x: 300, y: 180, w: 100, h: 60, hp: 3 },
-    { x: 300, y: 300, w: 100, h: 60, hp: 3 },
-    { x: 560, y: 180, w: 100, h: 60, hp: 3 },
-    { x: 560, y: 300, w: 100, h: 60, hp: 3 },
-    { x: 440, y: 240, w: 80, h: 60, hp: 3 }
+    ...walls,
+    ...extraTemplates.map((item) => ({
+      x: item.x - item.w / 2,
+      y: item.y - item.h / 2,
+      w: item.w,
+      h: item.h,
+      hp: coverHpForStyle(item.style),
+      style: item.style
+    }))
   ];
 }
 
 function createTank(x, y, angle, camoId = "classic") {
-  return { x, y, w: 38, h: 26, angle, turretAngle: angle, hp: 3, driveSpeed: 0, angularVelocity: 0, fireCd: 0, camoId };
+  const scale = getModeTankScale();
+  return { x, y, w: 38 * scale, h: 26 * scale, angle, turretAngle: angle, hp: maxTankHp, driveSpeed: 0, angularVelocity: 0, fireCd: 0, camoId, hasArmor: false, armorPop: 0 };
 }
 
 function normalizeNickname(name, fallback) {
   const clean = (typeof name === "string" ? name : "").trim() || fallback;
-  return clean.slice(0, 12);
+  return clean.slice(0, 18);
 }
 
 function normalizeLobbyName(name, fallback) {
@@ -74,12 +237,78 @@ function normalizeCamo(camo) {
   return value || "classic";
 }
 
-function resetArena() {
-  state = {
-    players: [createTank(120, 270, 0, camos.player0), createTank(840, 270, Math.PI, camos.player1)],
-    walls: baseWalls(),
-    bullets: []
+function pickRandomMapId() {
+  return MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)] || "grass";
+}
+
+function normalizeMapId(mapId) {
+  const value = typeof mapId === "string" ? mapId.trim() : "";
+  return MAP_IDS.includes(value) ? value : "grass";
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function pickAirdropSpot(existingDrops = []) {
+  const arenaW = state?.mapWidth || 960;
+  const arenaH = state?.mapHeight || 540;
+  const size = 24;
+  for (let i = 0; i < 18; i++) {
+    const x = randomBetween(78, arenaW - 78);
+    const y = randomBetween(78, arenaH - 78);
+    const rect = { x: x - size / 2, y: y - size / 2, w: size, h: size };
+    const nearOtherDrop = existingDrops.some((drop) => Math.hypot((drop.targetX ?? drop.x) - x, (drop.targetY ?? drop.y) - y) < 90);
+    if (!(state?.walls || []).some((wall) => rectsOverlap(rect, wall)) && !nearOtherDrop) {
+      return { x, y };
+    }
+  }
+  return { x: arenaW / 2, y: arenaH / 2 };
+}
+
+function makeAirdrop(existingDrops, delay = 0) {
+  const spot = pickAirdropSpot(existingDrops);
+  return {
+    phase: delay > 0 ? "queued" : "falling",
+    pickupType: Math.random() < 0.5 ? "armor" : "medkit",
+    x: spot.x,
+    y: -36,
+    targetX: spot.x,
+    targetY: spot.y,
+    drift: randomBetween(-10, 10),
+    vy: airdropFallSpeed,
+    timer: delay
   };
+}
+
+function spawnDropWave() {
+  if (!state || !matchState) return;
+  const planned = [...(state.airdrops || [])];
+  for (let i = 0; i < dropsPerWave; i++) {
+    const drop = makeAirdrop(planned, i * 0.22);
+    planned.push(drop);
+    state.airdrops.push(drop);
+  }
+}
+
+function resetArena(mapId = currentMapId, modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+  currentMapId = normalizeMapId(mapId);
+  currentModeId = normalizeLobbyMode(modeId);
+  currentArenaSizeId = normalizeArenaSizeId(arenaSizeId);
+  const size = getArenaSize(currentModeId, currentArenaSizeId);
+  const spawnInset = Math.max(120, size.w * 0.13);
+  state = {
+    players: [createTank(spawnInset, size.h / 2, 0, camos.player0), createTank(size.w - spawnInset, size.h / 2, Math.PI, camos.player1)],
+    walls: baseWalls(size.w, size.h, currentMapId),
+    lightCover: buildLightCover(size.w, size.h, currentMapId),
+    bullets: [],
+    mapId: currentMapId,
+    airdrops: []
+  };
+  state.mode = currentModeId;
+  state.arenaSizeId = currentArenaSizeId;
+  state.mapWidth = size.w;
+  state.mapHeight = size.h;
 }
 
 function resetMatchState() {
@@ -92,13 +321,20 @@ function resetMatchState() {
     roundEnded: false,
     roundResult: "draw",
     roundPauseLeft: 0,
-    matchEnded: false
+    matchEnded: false,
+    dropWaveIndex: 0,
+    matchElapsed: 0
   };
 }
 
 function makePublicState() {
   return {
     ...state,
+    mapId: state.mapId || currentMapId,
+    mode: state.mode || currentModeId,
+    arenaSizeId: state.arenaSizeId || currentArenaSizeId,
+    mapWidth: state.mapWidth || getArenaSize(currentModeId, currentArenaSizeId).w,
+    mapHeight: state.mapHeight || getArenaSize(currentModeId, currentArenaSizeId).h,
     nicknames: [nicknames.player0, nicknames.player1],
     camos: [camos.player0, camos.player1],
     match: {
@@ -161,7 +397,10 @@ function lobbyPublicView(lobby) {
     memberCamos: getLobbyMemberCamos(lobby),
     playerCount: (lobby.members || []).length,
     mode: lobby.mode,
+    arenaSizeId: lobby.arenaSizeId,
+    mapId: lobby.mapId,
     maxPlayers: lobby.maxPlayers,
+    countdownActive: !!lobby.countdownActive,
     hasPassword: !!lobby.password
   };
 }
@@ -207,9 +446,13 @@ function sendLobbyState(ws) {
       memberCamos: getLobbyMemberCamos(lobby),
       playerCount: (lobby.members || []).length,
       mode: lobby.mode,
+      arenaSizeId: lobby.arenaSizeId,
+      mapId: lobby.mapId,
       maxPlayers: lobby.maxPlayers,
       isCreator: lobby.host === ws,
-      canStart: lobby.host === ws && (lobby.members || []).length >= lobby.maxPlayers,
+      canStart: lobby.host === ws && (lobby.members || []).length >= lobby.maxPlayers && !lobby.countdownActive,
+      countdownActive: !!lobby.countdownActive,
+      countdownValue: lobby.countdownValue || 0,
       hasPassword: !!lobby.password
     }
   });
@@ -220,9 +463,37 @@ function refreshLobbyState(lobby) {
   for (const member of lobby.members || []) sendLobbyState(member.ws);
 }
 
+function sendLobbyUpdateToMembers(lobby, payload) {
+  if (!lobby) return;
+  for (const member of lobby.members || []) send(member.ws, payload);
+}
+
+function clearLobbyCountdown(lobby, notify = false, message = "Countdown cancelled.") {
+  if (!lobby) return;
+  const hadCountdown = !!lobby.countdownActive || (lobby.countdownValue || 0) > 0;
+  if (lobby.countdownTickTimer) {
+    clearInterval(lobby.countdownTickTimer);
+    lobby.countdownTickTimer = null;
+  }
+  if (lobby.countdownStartTimer) {
+    clearTimeout(lobby.countdownStartTimer);
+    lobby.countdownStartTimer = null;
+  }
+  lobby.countdownActive = false;
+  lobby.countdownValue = 0;
+  if (notify && hadCountdown) {
+    sendLobbyUpdateToMembers(lobby, {
+      type: "lobby_countdown_cancelled",
+      code: lobby.code,
+      message
+    });
+  }
+}
+
 function removeFromLobbies(ws, notify = true) {
   for (const [code, lobby] of lobbies.entries()) {
     if (lobby.host === ws) {
+      clearLobbyCountdown(lobby, false);
       for (const member of lobby.members || []) {
         if (member.ws === ws) continue;
         member.ws._lobbyCode = null;
@@ -239,6 +510,9 @@ function removeFromLobbies(ws, notify = true) {
     if (memberIndex >= 0) {
       lobby.members.splice(memberIndex, 1);
       ws._lobbyCode = null;
+      if (lobby.countdownActive && (lobby.members || []).length < lobby.maxPlayers) {
+        clearLobbyCountdown(lobby, true, `Countdown cancelled: need ${lobby.maxPlayers} players.`);
+      }
       if (notify) send(lobby.host, { type: "lobby_waiting", code, message: "Player left the lobby." });
       refreshLobbyState(lobby);
       sendLobbyState(ws);
@@ -264,7 +538,7 @@ function generateLobbyCode() {
   return `${Date.now().toString(36).slice(-5).toUpperCase()}`;
 }
 
-function startMatch(ws0, ws1, nick0, nick1, camo0, camo1) {
+function startMatch(ws0, ws1, nick0, nick1, camo0, camo1, mapId = "", modeId = "1v1", arenaSizeId = "standard") {
   if (arenaBusy()) return false;
   clients.player0 = ws0;
   clients.player1 = ws1;
@@ -278,7 +552,10 @@ function startMatch(ws0, ws1, nick0, nick1, camo0, camo1) {
   ws0._closingForMatchEnd = false;
   ws1._closingForMatchEnd = false;
 
-  resetArena();
+  currentMapId = mapId ? normalizeMapId(mapId) : pickRandomMapId();
+  currentModeId = normalizeLobbyMode(modeId);
+  currentArenaSizeId = normalizeArenaSizeId(arenaSizeId);
+  resetArena(currentMapId, currentModeId, currentArenaSizeId);
   state.players[0].camoId = camos.player0;
   state.players[1].camoId = camos.player1;
   resetMatchState();
@@ -303,7 +580,10 @@ function tryStartPendingMatch() {
       normalizeNickname(a._nick, "P1"),
       normalizeNickname(b._nick, "P2"),
       normalizeCamo(a._camo),
-      normalizeCamo(b._camo)
+      normalizeCamo(b._camo),
+      "",
+      "1v1",
+      "standard"
     );
   }
 }
@@ -317,7 +597,7 @@ function queueRandom(ws, nickname, camoRaw) {
   tryStartPendingMatch();
 }
 
-function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw) {
+function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw, mapRaw, arenaSizeRaw) {
   ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
   ws._camo = normalizeCamo(camoRaw || ws._camo);
   const lobbyNameInput = (typeof lobbyNameRaw === "string" ? lobbyNameRaw : "").trim();
@@ -330,19 +610,27 @@ function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw) 
   const lobbyName = normalizeLobbyName(lobbyNameInput, `${ws._nick}'s Lobby`);
   const password = normalizeLobbyPassword(passwordRaw);
   const mode = normalizeLobbyMode(modeRaw);
+  const mapId = normalizeMapId(mapRaw);
+  const arenaSizeId = normalizeArenaSizeId(arenaSizeRaw);
   const maxPlayers = LOBBY_MODE_LIMITS[mode];
   lobbies.set(code, {
     code,
     lobbyName,
     password,
     mode,
+    arenaSizeId,
+    mapId,
     maxPlayers,
     host: ws,
     hostNick: ws._nick,
-    members: [{ ws, nickname: ws._nick, camo: ws._camo }]
+    members: [{ ws, nickname: ws._nick, camo: ws._camo }],
+    countdownActive: false,
+    countdownValue: 0,
+    countdownTickTimer: null,
+    countdownStartTimer: null
   });
   ws._lobbyCode = code;
-  send(ws, { type: "lobby_created", code, lobbyName, mode, maxPlayers, hasPassword: !!password });
+  send(ws, { type: "lobby_created", code, lobbyName, mode, arenaSizeId, mapId, maxPlayers, hasPassword: !!password });
   send(ws, { type: "lobby_waiting", code, message: `Waiting for players (${1}/${maxPlayers})...` });
   sendLobbyState(ws);
   broadcastLobbyList();
@@ -420,9 +708,8 @@ function startLobbyGame(ws) {
     refreshLobbyState(lobby);
     return;
   }
-  if (lobby.mode !== "1v1") {
-    send(ws, { type: "error", message: `${lobby.mode} battles are not available yet` });
-    refreshLobbyState(lobby);
+  if (lobby.countdownActive) {
+    send(ws, { type: "error", message: "Countdown already in progress" });
     return;
   }
   if (arenaBusy()) {
@@ -430,12 +717,81 @@ function startLobbyGame(ws) {
     return;
   }
 
-  lobbies.delete(code);
-  const [hostMember, guestMember] = lobby.members;
-  hostMember.ws._lobbyCode = null;
-  guestMember.ws._lobbyCode = null;
+  lobby.countdownActive = true;
+  lobby.countdownValue = LOBBY_START_COUNTDOWN_SECONDS;
+  sendLobbyUpdateToMembers(lobby, {
+    type: "lobby_countdown",
+    code,
+    secondsLeft: lobby.countdownValue
+  });
+  refreshLobbyState(lobby);
   broadcastLobbyList();
-  startMatch(hostMember.ws, guestMember.ws, hostMember.nickname, guestMember.nickname, hostMember.camo, guestMember.camo);
+
+  lobby.countdownTickTimer = setInterval(() => {
+    const activeLobby = lobbies.get(code);
+    if (!activeLobby || !activeLobby.countdownActive) return;
+    if ((activeLobby.members || []).length < activeLobby.maxPlayers) {
+      clearLobbyCountdown(activeLobby, true, `Countdown cancelled: need ${activeLobby.maxPlayers} players.`);
+      refreshLobbyState(activeLobby);
+      broadcastLobbyList();
+      return;
+    }
+    if (arenaBusy()) {
+      clearLobbyCountdown(activeLobby, true, "Arena busy. Try again.");
+      refreshLobbyState(activeLobby);
+      return;
+    }
+    if ((activeLobby.countdownValue || 0) <= 1) return;
+    activeLobby.countdownValue -= 1;
+    sendLobbyUpdateToMembers(activeLobby, {
+      type: "lobby_countdown",
+      code,
+      secondsLeft: activeLobby.countdownValue
+    });
+    refreshLobbyState(activeLobby);
+  }, 1000);
+
+  lobby.countdownStartTimer = setTimeout(() => {
+    const activeLobby = lobbies.get(code);
+    if (!activeLobby || !activeLobby.countdownActive) return;
+
+    if ((activeLobby.members || []).length < activeLobby.maxPlayers) {
+      clearLobbyCountdown(activeLobby, true, `Countdown cancelled: need ${activeLobby.maxPlayers} players.`);
+      refreshLobbyState(activeLobby);
+      broadcastLobbyList();
+      return;
+    }
+    if (arenaBusy()) {
+      clearLobbyCountdown(activeLobby, true, "Arena busy. Try again.");
+      refreshLobbyState(activeLobby);
+      return;
+    }
+
+    clearLobbyCountdown(activeLobby, false);
+    lobbies.delete(code);
+    const members = activeLobby.members || [];
+    const [hostMember, guestMember] = members;
+    if (!hostMember || !guestMember) {
+      broadcastLobbyList();
+      return;
+    }
+    for (const member of members) {
+      member.ws._lobbyCode = null;
+      sendLobbyState(member.ws);
+    }
+    broadcastLobbyList();
+    startMatch(
+      hostMember.ws,
+      guestMember.ws,
+      hostMember.nickname,
+      guestMember.nickname,
+      hostMember.camo,
+      guestMember.camo,
+      activeLobby.mapId,
+      activeLobby.mode,
+      activeLobby.arenaSizeId
+    );
+  }, LOBBY_START_COUNTDOWN_SECONDS * 1000);
 }
 
 function cancelQueue(ws) {
@@ -462,7 +818,9 @@ function tankRect(t) {
 
 function canMoveTo(tank, nx, ny) {
   const next = { x: nx - tank.w / 2, y: ny - tank.h / 2, w: tank.w, h: tank.h };
-  if (next.x < 0 || next.y < 0 || next.x + next.w > 960 || next.y + next.h > 540) return false;
+  const arenaW = state?.mapWidth || 960;
+  const arenaH = state?.mapHeight || 540;
+  if (next.x < 0 || next.y < 0 || next.x + next.w > arenaW || next.y + next.h > arenaH) return false;
   for (const wall of state.walls) if (rectsOverlap(next, wall)) return false;
   return true;
 }
@@ -523,6 +881,7 @@ function updateTankDrive(tank, dt, throttleInput, turnInput) {
 
   moveTankWithSlide(tank, dt);
   tank.fireCd = Math.max(0, tank.fireCd - dt);
+  tank.armorPop = Math.max(0, (tank.armorPop || 0) - dt);
 }
 
 function updateTank(playerId, dt) {
@@ -541,13 +900,14 @@ function updateTank(playerId, dt) {
 
   if (inp.shoot && tank.fireCd <= 0) {
     const fireAngle = tank.turretAngle ?? tank.angle;
+    const muzzle = Math.max(24, tank.w * 0.64);
     tank.fireCd = 0.45;
     state.bullets.push({
-      x: tank.x + Math.cos(fireAngle) * 24,
-      y: tank.y + Math.sin(fireAngle) * 24,
+      x: tank.x + Math.cos(fireAngle) * muzzle,
+      y: tank.y + Math.sin(fireAngle) * muzzle,
       vx: Math.cos(fireAngle) * 380,
       vy: Math.sin(fireAngle) * 380,
-      r: 4,
+      r: getModeBulletRadius(),
       owner: playerId
     });
     tank.driveSpeed -= recoilStrength;
@@ -603,7 +963,7 @@ function nextRoundOrFinish() {
   matchState.roundEnded = false;
   matchState.roundResult = "draw";
   matchState.roundPauseLeft = 0;
-  resetArena();
+  resetArena(currentMapId, currentModeId, currentArenaSizeId);
 }
 
 function updateBullets(dt) {
@@ -612,7 +972,9 @@ function updateBullets(dt) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
 
-    if (b.x < -10 || b.y < -10 || b.x > 970 || b.y > 550) {
+    const arenaW = state?.mapWidth || 960;
+    const arenaH = state?.mapHeight || 540;
+    if (b.x < -10 || b.y < -10 || b.x > arenaW + 10 || b.y > arenaH + 10) {
       state.bullets.splice(i, 1);
       continue;
     }
@@ -636,15 +998,82 @@ function updateBullets(dt) {
       if (ownerIdx === p) continue;
       const rect = tankRect(tank);
       if (b.x > rect.x && b.x < rect.x + rect.w && b.y > rect.y && b.y < rect.y + rect.h) {
-        tank.hp -= 1;
         state.bullets.splice(i, 1);
-        if (tank.hp <= 0) {
-          const winnerId = p === 0 ? "player1" : "player0";
-          finishRound(winnerId);
+        if (tank.hasArmor) {
+          tank.hasArmor = false;
+          tank.armorPop = 0.22;
+        } else {
+          tank.hp -= 1;
+          if (tank.hp <= 0) {
+            const winnerId = p === 0 ? "player1" : "player0";
+            finishRound(winnerId);
+          }
         }
         break;
       }
     }
+  }
+}
+
+function updateAirdrop(dt) {
+  if (!state || !matchState || matchState.roundEnded || matchState.matchEnded) return;
+  matchState.matchElapsed += dt;
+  while (matchState.dropWaveIndex < totalDropWaves && matchState.matchElapsed >= dropWaveTimes[matchState.dropWaveIndex]) {
+    spawnDropWave();
+    matchState.dropWaveIndex += 1;
+  }
+
+  for (let i = state.airdrops.length - 1; i >= 0; i--) {
+    const drop = state.airdrops[i];
+    if (drop.phase === "queued") {
+      drop.timer -= dt;
+      if (drop.timer <= 0) {
+        drop.phase = "falling";
+        drop.timer = 0;
+      }
+      continue;
+    }
+
+    if (drop.phase === "falling") {
+      drop.x += drop.drift * dt;
+      drop.y += drop.vy * dt;
+      if (drop.y >= drop.targetY) {
+        drop.y = drop.targetY;
+        drop.phase = "landed";
+        drop.timer = 0.28;
+        drop.drift = 0;
+      }
+      continue;
+    }
+
+    if (drop.phase === "landed") {
+      drop.timer -= dt;
+      if (drop.timer <= 0) {
+        drop.phase = "pickup";
+        drop.timer = 0;
+      }
+      continue;
+    }
+
+    if (drop.phase !== "pickup") continue;
+
+    let consumed = false;
+    for (const tank of state.players) {
+      if (Math.abs(tank.x - drop.x) <= tank.w / 2 + airdropPickupSize / 2 && Math.abs(tank.y - drop.y) <= tank.h / 2 + airdropPickupSize / 2) {
+        if (drop.pickupType === "armor") {
+          if (!tank.hasArmor) {
+            tank.hasArmor = true;
+            tank.armorPop = 0;
+            consumed = true;
+          }
+        } else if (tank.hp < maxTankHp) {
+          tank.hp = Math.min(maxTankHp, tank.hp + 1);
+          consumed = true;
+        }
+      }
+      if (consumed) break;
+    }
+    if (consumed) state.airdrops.splice(i, 1);
   }
 }
 
@@ -686,7 +1115,7 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.type === "create_lobby") {
-      createLobby(ws, msg.nickname, msg.lobbyName, msg.password, msg.mode, msg.camo);
+      createLobby(ws, msg.nickname, msg.lobbyName, msg.password, msg.mode, msg.camo, msg.mapId, msg.arenaSizeId);
       return;
     }
 
@@ -759,6 +1188,7 @@ setInterval(() => {
       updateTank("player0", dt);
       updateTank("player1", dt);
       updateBullets(dt);
+      updateAirdrop(dt);
 
       matchState.roundTimeLeft = Math.max(0, matchState.roundTimeLeft - dt);
       if (matchState.roundTimeLeft <= 0) {
