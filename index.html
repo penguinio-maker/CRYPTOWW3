@@ -845,6 +845,7 @@
     let hasMouse = false;
     let onlineSocket = null;
     let myId = null;
+    let myTeam = "";
     let lastSentInputAt = 0;
     let shootQueued = false;
     let onlineShootSoundCd = 0;
@@ -2122,9 +2123,15 @@
         ctx.restore();
       }
     }
-    function drawBullets(list) {
+    function drawBullets(list, players = null) {
+      const ownerTeam = new Map();
+      for (const tank of players || []) {
+        if (!tank?.id) continue;
+        ownerTeam.set(tank.id, tank.team || "");
+      }
       for (const b of list || []) {
-        const isPlayerShot = b.owner === "player0" || b.owner === "player";
+        const team = ownerTeam.get(b.owner) || "";
+        const isPlayerShot = team ? team === "blue" : (b.owner === "player0" || b.owner === "player");
         const fill = currentMap === "winter"
           ? (isPlayerShot ? "#1d7fd8" : "#d8613d")
           : (isPlayerShot ? "#7fd8ff" : "#ff8f7a");
@@ -2301,8 +2308,8 @@
         const w = hud.winners[i];
         const x = dotStartX + i * 22;
         let fill = "#2d3b48";
-        if (w === "player" || w === "player0") fill = "#5cc8ff";
-        else if (w === "enemy" || w === "player1") fill = "#ff8a8a";
+        if (w === "player" || w === "player0" || w === "blue") fill = "#5cc8ff";
+        else if (w === "enemy" || w === "player1" || w === "red") fill = "#ff8a8a";
         else if (w === "draw") fill = "#aab8c3";
         ctx.fillStyle = fill;
         ctx.beginPath();
@@ -2635,26 +2642,24 @@
       if (mode === "online" && onlineState) {
         drawAirdrops(onlineState.airdrops);
         drawLightCover(onlineState.lightCover);
-        const p0 = onlineState.players?.[0];
-        const p1 = onlineState.players?.[1];
-        const p0Camo = CAMOS[p0?.camoId || onlineState.camos?.[0]] || CAMOS.classic;
-        const p1Camo = CAMOS[p1?.camoId || onlineState.camos?.[1]] || CAMOS.classic;
+        const onlinePlayers = Array.isArray(onlineState.players) ? onlineState.players : [];
         drawWalls(onlineState.walls);
-        drawBullets(onlineState.bullets);
-        if (p0) drawTank({ ...p0, camo: p0Camo });
-        if (p1) drawTank({ ...p1, camo: p1Camo });
-        if (p0) {
-          drawTankNickname(p0, formatNickname(onlineState.nicknames?.[0], "P1"));
-          drawTankHpBar(p0, p0.hp);
+        drawBullets(onlineState.bullets, onlinePlayers);
+        for (const tank of onlinePlayers) {
+          const camo = CAMOS[tank?.camoId] || (tank?.team === "red" ? ENEMY_CAMO : CAMOS.classic);
+          drawTank({ ...tank, camo });
         }
-        if (p1) {
-          drawTankNickname(p1, formatNickname(onlineState.nicknames?.[1], "P2"));
-          drawTankHpBar(p1, p1.hp);
+        for (const tank of onlinePlayers) {
+          const fallback = tank?.team === "red" ? "RED" : "BLUE";
+          drawTankNickname(tank, formatNickname(tank?.nickname, fallback));
+          drawTankHpBar(tank, tank?.hp ?? 0);
         }
+        const blueHp = onlinePlayers.filter((tank) => tank?.team === "blue").reduce((sum, tank) => sum + Math.max(0, tank.hp || 0), 0);
+        const redHp = onlinePlayers.filter((tank) => tank?.team === "red").reduce((sum, tank) => sum + Math.max(0, tank.hp || 0), 0);
         ctx.fillStyle = "#dbefff";
         ctx.font = "16px Segoe UI";
-        ctx.fillText(`P1 HP: ${p0 ? p0.hp : "-"}`, 16, 24);
-        ctx.fillText(`P2 HP: ${p1 ? p1.hp : "-"}`, world.w - 96, 24);
+        ctx.fillText(`Blue HP: ${blueHp}`, 16, 24);
+        ctx.fillText(`Red HP: ${redHp}`, world.w - 96, 24);
       } else {
         drawAirdrops(airdrops);
         drawLightCover(lightCover);
@@ -2712,6 +2717,7 @@
       onlineState = null;
       airdrops = [];
       myId = null;
+      myTeam = "";
       shootQueued = false;
       onlineShootSoundCd = 0;
       onlineSearchActive = false;
@@ -3147,9 +3153,9 @@
     function syncOnlineArmorBreakSound(prevState, nextState) {
       const prevPlayers = prevState?.players || [];
       const nextPlayers = nextState?.players || [];
-      for (let i = 0; i < nextPlayers.length; i++) {
-        const prevTank = prevPlayers[i];
-        const nextTank = nextPlayers[i];
+      const prevById = new Map(prevPlayers.map((tank) => [tank?.id, tank]));
+      for (const nextTank of nextPlayers) {
+        const prevTank = prevById.get(nextTank?.id);
         if (!prevTank || !nextTank) continue;
         if (prevTank.hasArmor && !nextTank.hasArmor && (nextTank.armorPop || 0) > 0) {
           playArmorBreakSound();
@@ -3175,7 +3181,10 @@
       socket.onmessage = (ev) => {
         if (onlineSocket !== socket) return;
         const msg = JSON.parse(ev.data);
-        if (msg.type === "welcome") myId = msg.playerId;
+        if (msg.type === "welcome") {
+          myId = msg.playerId;
+          myTeam = msg.team || "";
+        }
         if (msg.type === "lobby_list") {
           lobbyList = Array.isArray(msg.lobbies) ? msg.lobbies.map((lobby) => applyPendingLobbyMode(lobby)) : [];
           renderLobbiesUi();
@@ -3294,7 +3303,9 @@
           gameOver = false;
           winner = "";
           statusEl.textContent = "Online battle in progress";
-          modeMetaEl.textContent = myId === "player0" ? "You are Team A" : "You are Team B";
+          if (myTeam === "blue") modeMetaEl.textContent = "You are Team Blue";
+          else if (myTeam === "red") modeMetaEl.textContent = "You are Team Red";
+          else modeMetaEl.textContent = "Online battle";
           closeLobbiesModal();
           if (appScreen !== "game") openGameScreen();
         }
@@ -3306,8 +3317,13 @@
         if (msg.type === "end") {
           gameOver = true;
           gameStarted = false;
-          winner = msg.winnerId === myId ? "You win!" : "You lose";
-          if (msg.winnerId === "draw") winner = "Match draw";
+          if (msg.winnerId === "draw") {
+            winner = "Match draw";
+          } else if (msg.winnerId === "blue" || msg.winnerId === "red") {
+            winner = msg.winnerId === myTeam ? "You win!" : "You lose";
+          } else {
+            winner = msg.winnerId === myId ? "You win!" : "You lose";
+          }
           if (Array.isArray(msg.roundWinners)) {
             if (!onlineState) onlineState = {};
             onlineState.match = {
@@ -3331,6 +3347,7 @@
         hideLobbyCountdown();
         if (createLobbyPending) finishCreateLobbyRequest(false, "Unable to create lobby. Server disconnected.");
         onlineSearchActive = false;
+        myTeam = "";
         myLobbyState = null;
         activeLobbyCode = "";
         renderLobbiesUi();
@@ -3488,8 +3505,10 @@
       } else if (mode === "online") {
         if (onlineState?.mode) applyArenaSize(onlineState.mode, onlineState?.arenaSizeId || "standard", onlineState?.mapWidth || 0, onlineState?.mapHeight || 0);
         if (gameStarted && onlineState?.players) {
-          emitTrackMarksForTank(onlineState.players[0], "online-p0", dt, activeMapId);
-          emitTrackMarksForTank(onlineState.players[1], "online-p1", dt, activeMapId);
+          for (const tank of onlineState.players) {
+            if (!tank?.id) continue;
+            emitTrackMarksForTank(tank, `online-${tank.id}`, dt, activeMapId);
+          }
         }
         sendOnlineInput();
       }

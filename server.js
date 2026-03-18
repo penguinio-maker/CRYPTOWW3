@@ -46,10 +46,8 @@ const clients = { player0: [], player1: [] };
 const nicknames = { player0: "P1", player1: "P2" };
 const camos = { player0: "classic", player1: "classic" };
 const teamMembers = { player0: [], player1: [] };
-const inputs = {
-  player0: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false },
-  player1: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false }
-};
+const inputs = Object.create(null);
+let matchPlayers = [];
 
 const waitingRandom = [];
 const lobbies = new Map();
@@ -209,9 +207,26 @@ function baseWalls(width, height, mapId) {
   ];
 }
 
-function createTank(x, y, angle, camoId = "classic") {
+function createTank(x, y, angle, camoId = "classic", meta = {}) {
   const scale = getModeTankScale();
-  return { x, y, w: 38 * scale, h: 26 * scale, angle, turretAngle: angle, hp: maxTankHp, driveSpeed: 0, angularVelocity: 0, fireCd: 0, camoId, hasArmor: false, armorPop: 0 };
+  return {
+    x,
+    y,
+    w: 38 * scale,
+    h: 26 * scale,
+    angle,
+    turretAngle: angle,
+    hp: maxTankHp,
+    driveSpeed: 0,
+    angularVelocity: 0,
+    fireCd: 0,
+    camoId,
+    hasArmor: false,
+    armorPop: 0,
+    id: meta.id || "",
+    team: meta.team || "blue",
+    nickname: meta.nickname || ""
+  };
 }
 
 function normalizeNickname(name, fallback) {
@@ -245,6 +260,34 @@ function pickRandomMapId() {
 function normalizeMapId(mapId) {
   const value = typeof mapId === "string" ? mapId.trim() : "";
   return MAP_IDS.includes(value) ? value : "grass";
+}
+
+function makeDefaultInput(aimX = 480, aimY = 270) {
+  return { up: false, down: false, left: false, right: false, aimX, aimY, shoot: false };
+}
+
+function clearInputState() {
+  for (const key of Object.keys(inputs)) delete inputs[key];
+}
+
+function getTeamSide(team) {
+  return team === "red" ? "player1" : "player0";
+}
+
+function buildTeamSpawns(team, count, width, height) {
+  const inset = Math.max(120, width * 0.13);
+  const x = team === "red" ? width - inset : inset;
+  const angle = team === "red" ? Math.PI : 0;
+  const margin = 78;
+  if (count <= 1) return [{ x, y: height / 2, angle }];
+
+  const usable = Math.max(1, height - margin * 2);
+  const step = usable / (count - 1);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    out.push({ x, y: margin + i * step, angle });
+  }
+  return out;
 }
 
 function randomBetween(min, max) {
@@ -297,9 +340,31 @@ function resetArena(mapId = currentMapId, modeId = currentModeId, arenaSizeId = 
   currentModeId = normalizeLobbyMode(modeId);
   currentArenaSizeId = normalizeArenaSizeId(arenaSizeId);
   const size = getArenaSize(currentModeId, currentArenaSizeId);
-  const spawnInset = Math.max(120, size.w * 0.13);
+  const roster = matchPlayers.length > 0
+    ? matchPlayers
+    : [
+        { id: "player0", team: "blue", nickname: nicknames.player0, camo: camos.player0 },
+        { id: "player1", team: "red", nickname: nicknames.player1, camo: camos.player1 }
+      ];
+  const blueRoster = roster.filter((player) => player.team === "blue");
+  const redRoster = roster.filter((player) => player.team === "red");
+  const blueSpawns = buildTeamSpawns("blue", blueRoster.length || 1, size.w, size.h);
+  const redSpawns = buildTeamSpawns("red", redRoster.length || 1, size.w, size.h);
+  const spawnedPlayers = [];
+
+  for (let i = 0; i < blueRoster.length; i++) {
+    const member = blueRoster[i];
+    const spawn = blueSpawns[i] || blueSpawns[blueSpawns.length - 1];
+    spawnedPlayers.push(createTank(spawn.x, spawn.y, spawn.angle, member.camo, member));
+  }
+  for (let i = 0; i < redRoster.length; i++) {
+    const member = redRoster[i];
+    const spawn = redSpawns[i] || redSpawns[redSpawns.length - 1];
+    spawnedPlayers.push(createTank(spawn.x, spawn.y, spawn.angle, member.camo, member));
+  }
+
   state = {
-    players: [createTank(spawnInset, size.h / 2, 0, camos.player0), createTank(size.w - spawnInset, size.h / 2, Math.PI, camos.player1)],
+    players: spawnedPlayers,
     walls: baseWalls(size.w, size.h, currentMapId),
     lightCover: buildLightCover(size.w, size.h, currentMapId),
     bullets: [],
@@ -382,7 +447,6 @@ function clearPlayerSlot(playerId) {
   nicknames[playerId] = playerId === "player0" ? "P1" : "P2";
   camos[playerId] = "classic";
   teamMembers[playerId] = [];
-  inputs[playerId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
 }
 
 function removeFromRandomQueue(ws) {
@@ -573,22 +637,43 @@ function startMatch(
   const roster0 = baseTeam0.filter((member) => member?.ws?.readyState === 1);
   const roster1 = baseTeam1.filter((member) => member?.ws?.readyState === 1);
   if (roster0.length === 0 || roster1.length === 0) return false;
+  if (modeId === "1v1" && (roster0.length !== 1 || roster1.length !== 1)) return false;
+  if (modeId === "2v2" && (roster0.length !== 2 || roster1.length !== 2)) return false;
+  if (modeId === "3v3" && (roster0.length !== 3 || roster1.length !== 3)) return false;
+  if (modeId === "4v4" && (roster0.length !== 4 || roster1.length !== 4)) return false;
 
   clients.player0 = roster0.map((member) => member.ws);
   clients.player1 = roster1.map((member) => member.ws);
-  teamMembers.player0 = roster0.map((member) => normalizeNickname(member.nickname, "P1"));
-  teamMembers.player1 = roster1.map((member) => normalizeNickname(member.nickname, "P2"));
+  teamMembers.player0 = roster0.map((member) => normalizeNickname(member.nickname, "BLUE"));
+  teamMembers.player1 = roster1.map((member) => normalizeNickname(member.nickname, "RED"));
   nicknames.player0 = teamMembers.player0.length > 1 ? `Team A (${teamMembers.player0.length})` : teamMembers.player0[0];
   nicknames.player1 = teamMembers.player1.length > 1 ? `Team B (${teamMembers.player1.length})` : teamMembers.player1[0];
   camos.player0 = normalizeCamo(roster0[0].camo || camo0);
   camos.player1 = normalizeCamo(roster1[0].camo || camo1);
 
-  for (const member of roster0) {
-    member.ws._playerId = "player0";
+  clearInputState();
+  matchPlayers = [];
+
+  for (let i = 0; i < roster0.length; i++) {
+    const member = roster0[i];
+    const playerId = `blue_${i}`;
+    const nickname = normalizeNickname(member.nickname, `BLUE${i + 1}`);
+    const camo = normalizeCamo(member.camo || camo0);
+    matchPlayers.push({ id: playerId, team: "blue", nickname, camo, ws: member.ws });
+    inputs[playerId] = makeDefaultInput();
+    member.ws._playerId = playerId;
+    member.ws._team = "blue";
     member.ws._closingForMatchEnd = false;
   }
-  for (const member of roster1) {
-    member.ws._playerId = "player1";
+  for (let i = 0; i < roster1.length; i++) {
+    const member = roster1[i];
+    const playerId = `red_${i}`;
+    const nickname = normalizeNickname(member.nickname, `RED${i + 1}`);
+    const camo = normalizeCamo(member.camo || camo1);
+    matchPlayers.push({ id: playerId, team: "red", nickname, camo, ws: member.ws });
+    inputs[playerId] = makeDefaultInput();
+    member.ws._playerId = playerId;
+    member.ws._team = "red";
     member.ws._closingForMatchEnd = false;
   }
 
@@ -596,11 +681,10 @@ function startMatch(
   currentModeId = normalizeLobbyMode(modeId);
   currentArenaSizeId = normalizeArenaSizeId(arenaSizeId);
   resetArena(currentMapId, currentModeId, currentArenaSizeId);
-  state.players[0].camoId = camos.player0;
-  state.players[1].camoId = camos.player1;
   resetMatchState();
-  for (const ws of clients.player0) send(ws, { type: "welcome", playerId: "player0" });
-  for (const ws of clients.player1) send(ws, { type: "welcome", playerId: "player1" });
+  for (const player of matchPlayers) {
+    send(player.ws, { type: "welcome", playerId: player.id, team: player.team });
+  }
   broadcast({ type: "start", state: makePublicState() });
   return true;
 }
@@ -850,7 +934,7 @@ function startLobbyGame(ws) {
     lobbies.delete(code);
 
     broadcastLobbyList();
-    startMatch(
+    const started = startMatch(
       teamA[0].ws,
       teamB[0].ws,
       teamA[0].nickname,
@@ -863,6 +947,11 @@ function startLobbyGame(ws) {
       teamA,
       teamB
     );
+    if (!started) {
+      for (const member of connectedMembers) {
+        send(member.ws, { type: "error", message: `Failed to start ${activeLobby.mode}. Team setup invalid.` });
+      }
+    }
   }, LOBBY_START_COUNTDOWN_SECONDS * 1000);
 }
 
@@ -957,9 +1046,10 @@ function updateTankDrive(tank, dt, throttleInput, turnInput) {
 }
 
 function updateTank(playerId, dt) {
-  const idx = playerId === "player0" ? 0 : 1;
-  const tank = state.players[idx];
-  const inp = inputs[playerId];
+  const tank = state.players.find((item) => item.id === playerId);
+  if (!tank) return;
+  const inp = inputs[playerId] || makeDefaultInput(tank.x, tank.y);
+  if (!inputs[playerId]) inputs[playerId] = inp;
 
   const throttleInput = (inp.up ? 1 : 0) + (inp.down ? -1 : 0);
   const turnInput = (inp.right ? 1 : 0) + (inp.left ? -1 : 0);
@@ -985,14 +1075,24 @@ function updateTank(playerId, dt) {
     tank.driveSpeed -= recoilStrength;
   }
 
-  inputs[playerId].shoot = false;
+  inp.shoot = false;
+}
+
+function teamHp(team) {
+  return (state?.players || [])
+    .filter((tank) => tank.team === team)
+    .reduce((sum, tank) => sum + Math.max(0, tank.hp || 0), 0);
+}
+
+function isTeamAlive(team) {
+  return (state?.players || []).some((tank) => tank.team === team && tank.hp > 0);
 }
 
 function decideRoundWinnerByHp() {
-  const p0 = state.players[0].hp;
-  const p1 = state.players[1].hp;
-  if (p0 > p1) return "player0";
-  if (p1 > p0) return "player1";
+  const blueHp = teamHp("blue");
+  const redHp = teamHp("red");
+  if (blueHp > redHp) return "blue";
+  if (redHp > blueHp) return "red";
   return "draw";
 }
 
@@ -1008,9 +1108,9 @@ function finishMatch() {
   if (!matchState || matchState.matchEnded) return;
   matchState.matchEnded = true;
 
-  const p0Wins = matchState.roundWinners.filter((x) => x === "player0").length;
-  const p1Wins = matchState.roundWinners.filter((x) => x === "player1").length;
-  const finalWinner = p0Wins === p1Wins ? "draw" : p0Wins > p1Wins ? "player0" : "player1";
+  const blueWins = matchState.roundWinners.filter((x) => x === "blue").length;
+  const redWins = matchState.roundWinners.filter((x) => x === "red").length;
+  const finalWinner = blueWins === redWins ? "draw" : blueWins > redWins ? "blue" : "red";
 
   broadcast({ type: "end", winnerId: finalWinner, roundWinners: [...matchState.roundWinners] });
 
@@ -1065,10 +1165,12 @@ function updateBullets(dt) {
     }
     if (hitWall) continue;
 
-    for (let p = 0; p < 2; p++) {
+    const ownerTank = state.players.find((tank) => tank.id === b.owner);
+    const ownerTeam = ownerTank?.team || "";
+    for (let p = 0; p < state.players.length; p++) {
       const tank = state.players[p];
-      const ownerIdx = b.owner === "player0" ? 0 : 1;
-      if (ownerIdx === p) continue;
+      if (!tank || tank.hp <= 0) continue;
+      if (ownerTeam && tank.team === ownerTeam) continue;
       const rect = tankRect(tank);
       if (b.x > rect.x && b.x < rect.x + rect.w && b.y > rect.y && b.y < rect.y + rect.h) {
         state.bullets.splice(i, 1);
@@ -1078,8 +1180,12 @@ function updateBullets(dt) {
         } else {
           tank.hp -= 1;
           if (tank.hp <= 0) {
-            const winnerId = p === 0 ? "player1" : "player0";
-            finishRound(winnerId);
+            const blueAlive = isTeamAlive("blue");
+            const redAlive = isTeamAlive("red");
+            if (!blueAlive || !redAlive) {
+              const winnerId = blueAlive && !redAlive ? "blue" : redAlive && !blueAlive ? "red" : "draw";
+              finishRound(winnerId);
+            }
           }
         }
         break;
@@ -1169,6 +1275,7 @@ wss.on("connection", (ws) => {
   ws._nick = "PLAYER";
   ws._lobbyCode = null;
   ws._playerId = null;
+  ws._team = "";
   ws._closingForMatchEnd = false;
 
   sendLobbyList(ws);
@@ -1229,13 +1336,16 @@ wss.on("connection", (ws) => {
   ws.on("close", () => {
     leavePending(ws, true);
 
-    if (ws._playerId === "player0" || ws._playerId === "player1") {
-      const me = ws._playerId;
+    if (ws._team === "blue" || ws._team === "red") {
+      const me = getTeamSide(ws._team);
       const other = me === "player0" ? "player1" : "player0";
       clients[me] = activeSockets(me).filter((sock) => sock !== ws);
+      matchPlayers = matchPlayers.filter((player) => player.ws !== ws);
+      if (ws._playerId && inputs[ws._playerId]) delete inputs[ws._playerId];
 
       if (clients[me].length === 0) {
-        clearPlayerSlot(me);
+        teamMembers[me] = [];
+        nicknames[me] = me === "player0" ? "P1" : "P2";
         if (!ws._closingForMatchEnd) {
           const otherSockets = activeSockets(other);
           for (const otherWs of otherSockets) {
@@ -1248,6 +1358,10 @@ wss.on("connection", (ws) => {
       }
 
       if (!arenaBusy()) {
+        clearPlayerSlot("player0");
+        clearPlayerSlot("player1");
+        matchPlayers = [];
+        clearInputState();
         resetArena();
         resetMatchState();
         tryStartPendingMatch();
@@ -1264,8 +1378,9 @@ setInterval(() => {
   const dt = TICK_MS / 1000;
   if (!matchState.matchEnded) {
     if (!matchState.roundEnded) {
-      updateTank("player0", dt);
-      updateTank("player1", dt);
+      for (const tank of state.players || []) {
+        updateTank(tank.id, dt);
+      }
       updateBullets(dt);
       updateAirdrop(dt);
 
