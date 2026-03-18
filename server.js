@@ -1070,7 +1070,8 @@ function updateTank(playerId, dt) {
       vx: Math.cos(fireAngle) * 380,
       vy: Math.sin(fireAngle) * 380,
       r: getModeBulletRadius(),
-      owner: playerId
+      owner: playerId,
+      ownerTeam: tank.team || ""
     });
     tank.driveSpeed -= recoilStrength;
   }
@@ -1166,7 +1167,7 @@ function updateBullets(dt) {
     if (hitWall) continue;
 
     const ownerTank = state.players.find((tank) => tank.id === b.owner);
-    const ownerTeam = ownerTank?.team || "";
+    const ownerTeam = b.ownerTeam || ownerTank?.team || "";
     for (let p = 0; p < state.players.length; p++) {
       const tank = state.players[p];
       if (!tank || tank.hp <= 0) continue;
@@ -1180,6 +1181,8 @@ function updateBullets(dt) {
         } else {
           tank.hp -= 1;
           if (tank.hp <= 0) {
+            if (tank.id && inputs[tank.id]) delete inputs[tank.id];
+            state.players.splice(p, 1);
             const blueAlive = isTeamAlive("blue");
             const redAlive = isTeamAlive("red");
             if (!blueAlive || !redAlive) {
