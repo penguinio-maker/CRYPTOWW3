@@ -42,9 +42,10 @@ const ARENA_SIZE_PRESETS = {
   xl: MODE_MAP_SIZE["4v4"]
 };
 
-const clients = { player0: null, player1: null };
+const clients = { player0: [], player1: [] };
 const nicknames = { player0: "P1", player1: "P2" };
 const camos = { player0: "classic", player1: "classic" };
+const teamMembers = { player0: [], player1: [] };
 const inputs = {
   player0: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false },
   player1: { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false }
@@ -337,6 +338,10 @@ function makePublicState() {
     mapHeight: state.mapHeight || getArenaSize(currentModeId, currentArenaSizeId).h,
     nicknames: [nicknames.player0, nicknames.player1],
     camos: [camos.player0, camos.player1],
+    teams: {
+      player0: [...teamMembers.player0],
+      player1: [...teamMembers.player1]
+    },
     match: {
       totalRounds,
       roundTime,
@@ -354,23 +359,29 @@ function send(ws, payload) {
   ws.send(JSON.stringify(payload));
 }
 
+function activeSockets(playerId) {
+  return (clients[playerId] || []).filter((ws) => ws && ws.readyState === 1);
+}
+
 function broadcast(payload) {
-  send(clients.player0, payload);
-  send(clients.player1, payload);
+  const sockets = [...activeSockets("player0"), ...activeSockets("player1")];
+  const unique = new Set(sockets);
+  for (const ws of unique) send(ws, payload);
 }
 
 function bothConnected() {
-  return clients.player0 && clients.player1;
+  return activeSockets("player0").length > 0 && activeSockets("player1").length > 0;
 }
 
 function arenaBusy() {
-  return !!clients.player0 || !!clients.player1;
+  return activeSockets("player0").length > 0 || activeSockets("player1").length > 0;
 }
 
 function clearPlayerSlot(playerId) {
-  clients[playerId] = null;
+  clients[playerId] = [];
   nicknames[playerId] = playerId === "player0" ? "P1" : "P2";
   camos[playerId] = "classic";
+  teamMembers[playerId] = [];
   inputs[playerId] = { up: false, down: false, left: false, right: false, aimX: 480, aimY: 270, shoot: false };
 }
 
@@ -538,19 +549,48 @@ function generateLobbyCode() {
   return `${Date.now().toString(36).slice(-5).toUpperCase()}`;
 }
 
-function startMatch(ws0, ws1, nick0, nick1, camo0, camo1, mapId = "", modeId = "1v1", arenaSizeId = "standard") {
+function startMatch(
+  ws0,
+  ws1,
+  nick0,
+  nick1,
+  camo0,
+  camo1,
+  mapId = "",
+  modeId = "1v1",
+  arenaSizeId = "standard",
+  team0Roster = null,
+  team1Roster = null
+) {
   if (arenaBusy()) return false;
-  clients.player0 = ws0;
-  clients.player1 = ws1;
-  nicknames.player0 = nick0;
-  nicknames.player1 = nick1;
-  camos.player0 = normalizeCamo(camo0);
-  camos.player1 = normalizeCamo(camo1);
+  const baseTeam0 = Array.isArray(team0Roster) && team0Roster.length > 0
+    ? team0Roster
+    : [{ ws: ws0, nickname: nick0, camo: camo0 }];
+  const baseTeam1 = Array.isArray(team1Roster) && team1Roster.length > 0
+    ? team1Roster
+    : [{ ws: ws1, nickname: nick1, camo: camo1 }];
 
-  ws0._playerId = "player0";
-  ws1._playerId = "player1";
-  ws0._closingForMatchEnd = false;
-  ws1._closingForMatchEnd = false;
+  const roster0 = baseTeam0.filter((member) => member?.ws?.readyState === 1);
+  const roster1 = baseTeam1.filter((member) => member?.ws?.readyState === 1);
+  if (roster0.length === 0 || roster1.length === 0) return false;
+
+  clients.player0 = roster0.map((member) => member.ws);
+  clients.player1 = roster1.map((member) => member.ws);
+  teamMembers.player0 = roster0.map((member) => normalizeNickname(member.nickname, "P1"));
+  teamMembers.player1 = roster1.map((member) => normalizeNickname(member.nickname, "P2"));
+  nicknames.player0 = teamMembers.player0.length > 1 ? `Team A (${teamMembers.player0.length})` : teamMembers.player0[0];
+  nicknames.player1 = teamMembers.player1.length > 1 ? `Team B (${teamMembers.player1.length})` : teamMembers.player1[0];
+  camos.player0 = normalizeCamo(roster0[0].camo || camo0);
+  camos.player1 = normalizeCamo(roster1[0].camo || camo1);
+
+  for (const member of roster0) {
+    member.ws._playerId = "player0";
+    member.ws._closingForMatchEnd = false;
+  }
+  for (const member of roster1) {
+    member.ws._playerId = "player1";
+    member.ws._closingForMatchEnd = false;
+  }
 
   currentMapId = mapId ? normalizeMapId(mapId) : pickRandomMapId();
   currentModeId = normalizeLobbyMode(modeId);
@@ -559,8 +599,8 @@ function startMatch(ws0, ws1, nick0, nick1, camo0, camo1, mapId = "", modeId = "
   state.players[0].camoId = camos.player0;
   state.players[1].camoId = camos.player1;
   resetMatchState();
-  send(ws0, { type: "welcome", playerId: "player0" });
-  send(ws1, { type: "welcome", playerId: "player1" });
+  for (const ws of clients.player0) send(ws, { type: "welcome", playerId: "player0" });
+  for (const ws of clients.player1) send(ws, { type: "welcome", playerId: "player1" });
   broadcast({ type: "start", state: makePublicState() });
   return true;
 }
@@ -768,28 +808,60 @@ function startLobbyGame(ws) {
     }
 
     clearLobbyCountdown(activeLobby, false);
-    lobbies.delete(code);
     const members = activeLobby.members || [];
-    const [hostMember, guestMember] = members;
-    if (!hostMember || !guestMember) {
+    const connectedMembers = members.filter((member) => member?.ws?.readyState === 1);
+    if (connectedMembers.length < activeLobby.maxPlayers) {
+      clearLobbyCountdown(activeLobby, true, `Countdown cancelled: need ${activeLobby.maxPlayers} connected players.`);
+      refreshLobbyState(activeLobby);
       broadcastLobbyList();
       return;
     }
-    for (const member of members) {
+    if (connectedMembers.length % 2 !== 0) {
+      clearLobbyCountdown(activeLobby, true, "Teams must be even.");
+      refreshLobbyState(activeLobby);
+      broadcastLobbyList();
+      return;
+    }
+    if (connectedMembers.length < 2) {
+      clearLobbyCountdown(activeLobby, true, "Not enough connected players.");
+      refreshLobbyState(activeLobby);
+      broadcastLobbyList();
+      return;
+    }
+
+    const teamA = [];
+    const teamB = [];
+    for (let i = 0; i < connectedMembers.length; i++) {
+      if (i % 2 === 0) teamA.push(connectedMembers[i]);
+      else teamB.push(connectedMembers[i]);
+    }
+    if (teamA.length === 0 || teamB.length === 0) {
+      clearLobbyCountdown(activeLobby, true, "Unable to build teams.");
+      refreshLobbyState(activeLobby);
+      broadcastLobbyList();
+      return;
+    }
+
+    for (const member of connectedMembers) {
       member.ws._lobbyCode = null;
       sendLobbyState(member.ws);
     }
+
+    lobbies.delete(code);
+
     broadcastLobbyList();
     startMatch(
-      hostMember.ws,
-      guestMember.ws,
-      hostMember.nickname,
-      guestMember.nickname,
-      hostMember.camo,
-      guestMember.camo,
+      teamA[0].ws,
+      teamB[0].ws,
+      teamA[0].nickname,
+      teamB[0].nickname,
+      teamA[0].camo,
+      teamB[0].camo,
       activeLobby.mapId,
       activeLobby.mode,
-      activeLobby.arenaSizeId
+      activeLobby.arenaSizeId,
+      teamA,
+      teamB
     );
   }, LOBBY_START_COUNTDOWN_SECONDS * 1000);
 }
@@ -942,10 +1014,11 @@ function finishMatch() {
 
   broadcast({ type: "end", winnerId: finalWinner, roundWinners: [...matchState.roundWinners] });
 
-  const closingSockets = [clients.player0, clients.player1].filter(Boolean);
-  for (const ws of closingSockets) ws._closingForMatchEnd = true;
+  const closingSockets = [...activeSockets("player0"), ...activeSockets("player1")];
+  const uniqueSockets = [...new Set(closingSockets)];
+  for (const ws of uniqueSockets) ws._closingForMatchEnd = true;
   setTimeout(() => {
-    for (const ws of closingSockets) {
+    for (const ws of uniqueSockets) {
       if (ws.readyState === 1) ws.close(1000, "match-ended");
     }
   }, 150);
@@ -1159,16 +1232,22 @@ wss.on("connection", (ws) => {
     if (ws._playerId === "player0" || ws._playerId === "player1") {
       const me = ws._playerId;
       const other = me === "player0" ? "player1" : "player0";
-      const otherWs = clients[other];
-      clearPlayerSlot(me);
+      clients[me] = activeSockets(me).filter((sock) => sock !== ws);
 
-      if (!ws._closingForMatchEnd && otherWs && otherWs.readyState === 1) {
-        send(otherWs, { type: "error", message: "Opponent disconnected" });
-        otherWs._closingForMatchEnd = true;
-        otherWs.close(1000, "opponent-disconnected");
+      if (clients[me].length === 0) {
+        clearPlayerSlot(me);
+        if (!ws._closingForMatchEnd) {
+          const otherSockets = activeSockets(other);
+          for (const otherWs of otherSockets) {
+            send(otherWs, { type: "error", message: "Opponent disconnected" });
+            otherWs._closingForMatchEnd = true;
+            otherWs.close(1000, "opponent-disconnected");
+          }
+          clearPlayerSlot(other);
+        }
       }
 
-      if (!clients.player0 && !clients.player1) {
+      if (!arenaBusy()) {
         resetArena();
         resetMatchState();
         tryStartPendingMatch();

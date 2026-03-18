@@ -3294,7 +3294,7 @@
           gameOver = false;
           winner = "";
           statusEl.textContent = "Online battle in progress";
-          modeMetaEl.textContent = `You are player ${myId === "player0" ? "1" : "2"}`;
+          modeMetaEl.textContent = myId === "player0" ? "You are Team A" : "You are Team B";
           closeLobbiesModal();
           if (appScreen !== "game") openGameScreen();
         }
