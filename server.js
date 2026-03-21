@@ -36,12 +36,6 @@ const MODE_MAP_SIZE = {
   "3v3": { w: 1100, h: 620 },
   "4v4": { w: 1240, h: 700 }
 };
-const ARENA_SIZE_PRESETS = {
-  standard: null,
-  large: MODE_MAP_SIZE["3v3"],
-  xl: MODE_MAP_SIZE["4v4"]
-};
-
 const clients = { player0: [], player1: [] };
 const nicknames = { player0: "P1", player1: "P2" };
 const camos = { player0: "classic", player1: "classic" };
@@ -59,35 +53,35 @@ let currentMapId = "grass";
 let currentModeId = "1v1";
 let currentArenaSizeId = "standard";
 
-function normalizeArenaSizeId(arenaSizeId) {
-  const value = typeof arenaSizeId === "string" ? arenaSizeId.trim() : "";
-  return Object.prototype.hasOwnProperty.call(ARENA_SIZE_PRESETS, value) ? value : "standard";
+function normalizeArenaSizeId(modeId = currentModeId) {
+  if (modeId === "3v3") return "large";
+  if (modeId === "4v4") return "xl";
+  return "standard";
 }
 
-function getArenaSize(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
-  const override = ARENA_SIZE_PRESETS[normalizeArenaSizeId(arenaSizeId)];
-  return override || MODE_MAP_SIZE[modeId] || MODE_MAP_SIZE["1v1"];
+function getArenaSize(modeId = currentModeId) {
+  return MODE_MAP_SIZE[modeId] || MODE_MAP_SIZE["1v1"];
 }
 
-function getLargeModeProfile(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
-  if (modeId === "4v4" || arenaSizeId === "xl") return "4v4";
-  if (modeId === "3v3" || arenaSizeId === "large") return "3v3";
+function getLargeModeProfile(modeId = currentModeId) {
+  if (modeId === "4v4") return "4v4";
+  if (modeId === "3v3") return "3v3";
   return "small";
 }
 
-function isLargeTeamMode(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
-  return getLargeModeProfile(modeId, arenaSizeId) !== "small";
+function isLargeTeamMode(modeId = currentModeId) {
+  return getLargeModeProfile(modeId) !== "small";
 }
 
-function getModeTankScale(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
-  const profile = getLargeModeProfile(modeId, arenaSizeId);
+function getModeTankScale(modeId = currentModeId) {
+  const profile = getLargeModeProfile(modeId);
   if (profile === "4v4") return 1.18;
   if (profile === "3v3") return 1.12;
   return 1;
 }
 
-function getModeBulletRadius(modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
-  const profile = getLargeModeProfile(modeId, arenaSizeId);
+function getModeBulletRadius(modeId = currentModeId) {
+  const profile = getLargeModeProfile(modeId);
   if (profile === "4v4") return 5.2;
   if (profile === "3v3") return 4.7;
   return 4;
@@ -335,11 +329,11 @@ function spawnDropWave() {
   }
 }
 
-function resetArena(mapId = currentMapId, modeId = currentModeId, arenaSizeId = currentArenaSizeId) {
+function resetArena(mapId = currentMapId, modeId = currentModeId) {
   currentMapId = normalizeMapId(mapId);
   currentModeId = normalizeLobbyMode(modeId);
-  currentArenaSizeId = normalizeArenaSizeId(arenaSizeId);
-  const size = getArenaSize(currentModeId, currentArenaSizeId);
+  currentArenaSizeId = normalizeArenaSizeId(currentModeId);
+  const size = getArenaSize(currentModeId);
   const roster = matchPlayers.length > 0
     ? matchPlayers
     : [
@@ -399,8 +393,8 @@ function makePublicState() {
     mapId: state.mapId || currentMapId,
     mode: state.mode || currentModeId,
     arenaSizeId: state.arenaSizeId || currentArenaSizeId,
-    mapWidth: state.mapWidth || getArenaSize(currentModeId, currentArenaSizeId).w,
-    mapHeight: state.mapHeight || getArenaSize(currentModeId, currentArenaSizeId).h,
+    mapWidth: state.mapWidth || getArenaSize(currentModeId).w,
+    mapHeight: state.mapHeight || getArenaSize(currentModeId).h,
     nicknames: [nicknames.player0, nicknames.player1],
     camos: [camos.player0, camos.player1],
     teams: {
@@ -622,7 +616,6 @@ function startMatch(
   camo1,
   mapId = "",
   modeId = "1v1",
-  arenaSizeId = "standard",
   team0Roster = null,
   team1Roster = null
 ) {
@@ -679,8 +672,8 @@ function startMatch(
 
   currentMapId = mapId ? normalizeMapId(mapId) : pickRandomMapId();
   currentModeId = normalizeLobbyMode(modeId);
-  currentArenaSizeId = normalizeArenaSizeId(arenaSizeId);
-  resetArena(currentMapId, currentModeId, currentArenaSizeId);
+  currentArenaSizeId = normalizeArenaSizeId(currentModeId);
+  resetArena(currentMapId, currentModeId);
   resetMatchState();
   for (const player of matchPlayers) {
     send(player.ws, { type: "welcome", playerId: player.id, team: player.team });
@@ -706,8 +699,7 @@ function tryStartPendingMatch() {
       normalizeCamo(a._camo),
       normalizeCamo(b._camo),
       "",
-      "1v1",
-      "standard"
+      "1v1"
     );
   }
 }
@@ -721,7 +713,7 @@ function queueRandom(ws, nickname, camoRaw) {
   tryStartPendingMatch();
 }
 
-function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw, mapRaw, arenaSizeRaw) {
+function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw, mapRaw) {
   ws._nick = normalizeNickname(nickname, ws._nick || "PLAYER");
   ws._camo = normalizeCamo(camoRaw || ws._camo);
   const lobbyNameInput = (typeof lobbyNameRaw === "string" ? lobbyNameRaw : "").trim();
@@ -735,7 +727,7 @@ function createLobby(ws, nickname, lobbyNameRaw, passwordRaw, modeRaw, camoRaw, 
   const password = normalizeLobbyPassword(passwordRaw);
   const mode = normalizeLobbyMode(modeRaw);
   const mapId = normalizeMapId(mapRaw);
-  const arenaSizeId = normalizeArenaSizeId(arenaSizeRaw);
+  const arenaSizeId = mode === "3v3" ? "large" : mode === "4v4" ? "xl" : "standard";
   const maxPlayers = LOBBY_MODE_LIMITS[mode];
   lobbies.set(code, {
     code,
@@ -943,7 +935,6 @@ function startLobbyGame(ws) {
       teamB[0].camo,
       activeLobby.mapId,
       activeLobby.mode,
-      activeLobby.arenaSizeId,
       teamA,
       teamB
     );
@@ -1137,7 +1128,7 @@ function nextRoundOrFinish() {
   matchState.roundEnded = false;
   matchState.roundResult = "draw";
   matchState.roundPauseLeft = 0;
-  resetArena(currentMapId, currentModeId, currentArenaSizeId);
+  resetArena(currentMapId, currentModeId);
 }
 
 function updateBullets(dt) {
@@ -1298,7 +1289,7 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.type === "create_lobby") {
-      createLobby(ws, msg.nickname, msg.lobbyName, msg.password, msg.mode, msg.camo, msg.mapId, msg.arenaSizeId);
+      createLobby(ws, msg.nickname, msg.lobbyName, msg.password, msg.mode, msg.camo, msg.mapId);
       return;
     }
 

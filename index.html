@@ -6,46 +6,94 @@
   <title>Light Tanks</title>
   <style>
     :root {
-      --bg: #101820;
-      --panel: #162635;
+      --bg: #08131d;
+      --bg-deep: #050d16;
+      --panel: #102233;
+      --panel-2: #0d1b28;
+      --panel-3: #0b1723;
       --text: #e8f2ff;
+      --text-soft: #a9c3d8;
       --accent: #5cc8ff;
+      --accent-strong: #7ad7ff;
+      --border: #34536b;
+      --border-soft: #2a4358;
+      --shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
     }
 
     * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(circle at 20% 10%, #1e3345, var(--bg) 60%);
+      background:
+        radial-gradient(circle at 16% 8%, rgba(59, 104, 136, 0.24) 0, transparent 34%),
+        radial-gradient(circle at 84% 12%, rgba(35, 89, 123, 0.2) 0, transparent 36%),
+        linear-gradient(180deg, #0c1a27 0%, var(--bg) 38%, var(--bg-deep) 100%);
       color: var(--text);
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      padding: 12px;
+      font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+      padding: 0;
+      letter-spacing: 0.01em;
     }
+    button, input, select, textarea { font-family: inherit; }
     .hidden { display: none !important; pointer-events: none !important; }
     .main-screen {
-      width: min(980px, 100%);
-      margin: 0 auto;
-      min-height: calc(100vh - 24px);
+      width: 100%;
+      height: 100vh;
       display: grid;
       place-items: center;
+      padding: 12px;
+      overflow: hidden;
     }
     .main-card {
-      width: min(560px, 100%);
-      background: color-mix(in srgb, #162635 90%, black);
-      border: 1px solid #2f4b62;
-      border-radius: 14px;
-      padding: 22px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      width: min(980px, 100%);
+      max-height: calc(100vh - 24px);
+      background:
+        linear-gradient(180deg, rgba(24, 47, 66, 0.86), rgba(10, 22, 34, 0.92)),
+        linear-gradient(135deg, rgba(120, 199, 255, 0.07), transparent 44%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px 22px 18px;
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(226, 243, 255, 0.09);
       text-align: center;
+      backdrop-filter: blur(7px);
+      overflow: hidden;
+    }
+    .menu-layout {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 0;
+    }
+    .menu-left {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: min(360px, 42vw);
+      min-width: 0;
+      text-align: left;
+    }
+    .menu-right {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: min(300px, 34vw);
+      min-width: 0;
+      align-items: stretch;
+      text-align: left;
     }
     .main-title {
-      margin: 0 0 8px;
-      font-family: "Courier New", monospace;
-      font-size: clamp(30px, 5vw, 44px);
+      margin: 0 0 14px;
+      font-family: "Rajdhani", "Courier New", monospace;
+      font-size: clamp(34px, 5.2vw, 48px);
       font-weight: 900;
-      letter-spacing: 1px;
+      letter-spacing: 0.06em;
       color: #e8f2ff;
-      text-shadow: 2px 2px 0 #1d5878;
+      text-shadow: 0 0 24px rgba(98, 194, 255, 0.28), 0 2px 0 rgba(14, 31, 45, 0.9);
       text-transform: uppercase;
     }
     .main-sub {
@@ -55,8 +103,8 @@
     }
     .main-actions {
       display: grid;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 11px;
+      margin-bottom: 0;
     }
     .lobbies-modal {
       position: fixed;
@@ -85,7 +133,10 @@
     .lobbies-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(5, 10, 16, 0.45);
+      background:
+        radial-gradient(circle at 50% 8%, rgba(92, 173, 230, 0.1), transparent 38%),
+        rgba(4, 10, 16, 0.68);
+      backdrop-filter: blur(3px);
     }
     .lobbies-window {
       position: relative;
@@ -93,14 +144,21 @@
       height: min(64vh, 560px);
       min-width: 520px;
       min-height: 360px;
-      background: color-mix(in srgb, #162635 92%, black);
-      border: 1px solid #3c5e78;
-      border-radius: 14px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-      padding: 14px;
+      background:
+        linear-gradient(180deg, rgba(19, 36, 50, 0.95), rgba(9, 18, 28, 0.96)),
+        linear-gradient(135deg, rgba(120, 200, 255, 0.05), transparent 46%);
+      border: 1px solid #3d6079;
+      border-radius: 16px;
+      box-shadow: 0 28px 64px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(220, 241, 255, 0.08);
+      padding: 16px;
       display: grid;
       grid-template-rows: auto auto auto 1fr;
-      gap: 10px;
+      gap: 11px;
+      animation: modalPop 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    @keyframes modalPop {
+      from { opacity: 0; transform: translateY(10px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
     .lobbies-head {
       display: flex;
@@ -110,19 +168,31 @@
     }
     .lobbies-title {
       margin: 0;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 18px rgba(92, 200, 255, 0.18);
     }
     .lobbies-close {
       width: 30px;
       height: 30px;
-      border: 1px solid #6791ad;
-      border-radius: 8px;
-      background: #1f3647;
+      border: 1px solid #628ba8;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #284257, #1a2f41);
       color: #e8f2ff;
       cursor: pointer;
       font-weight: 700;
+      transition: transform 140ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+    .lobbies-close:hover,
+    .lobbies-close:focus-visible {
+      transform: translateY(-1px);
+      border-color: #8fd6ff;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24), 0 0 0 2px rgba(92, 200, 255, 0.18);
+      outline: none;
+    }
+    .lobbies-close:active {
+      transform: translateY(0);
     }
     .lobbies-actions {
       display: grid;
@@ -132,34 +202,47 @@
     }
     .lobby-input {
       height: 38px;
-      border-radius: 8px;
-      border: 1px solid #4f7088;
-      background: #0e1c28;
+      border-radius: 10px;
+      border: 1px solid #456680;
+      background: linear-gradient(180deg, #0f1f2d, #0b1824);
       color: var(--text);
-      padding: 8px 10px;
+      padding: 8px 11px;
       font-size: 14px;
       outline: none;
       text-transform: uppercase;
+      transition: border-color 160ms ease, box-shadow 180ms ease, background 180ms ease, transform 140ms ease;
+      box-shadow: inset 0 1px 0 rgba(223, 241, 255, 0.05);
+    }
+    .lobby-input:focus {
+      border-color: #86d4ff;
+      background: linear-gradient(180deg, #112536, #0d1d2a);
+      box-shadow: inset 0 1px 0 rgba(223, 241, 255, 0.08), 0 0 0 2px rgba(92, 200, 255, 0.2), 0 8px 16px rgba(6, 14, 22, 0.28);
+      transform: translateY(-1px);
+    }
+    .lobby-input::placeholder {
+      color: #8ca9bc;
     }
     .lobby-meta {
       min-height: 18px;
       font-size: 12px;
-      color: #b9d8ea;
+      color: #a7c5d9;
       text-align: left;
+      letter-spacing: 0.01em;
     }
     .my-lobby-card {
-      border: 1px solid #8ea0af;
-      background: rgba(20, 33, 45, 0.72);
-      border-radius: 10px;
-      padding: 12px;
+      border: 1px solid #6f8799;
+      background: linear-gradient(180deg, rgba(19, 33, 45, 0.85), rgba(13, 23, 33, 0.82));
+      border-radius: 12px;
+      padding: 12px 13px;
       text-align: left;
       margin-bottom: 10px;
+      box-shadow: inset 0 1px 0 rgba(222, 238, 252, 0.06);
     }
     .lobby-list {
-      border: 1px solid #2f4b62;
-      border-radius: 10px;
-      background: rgba(6, 14, 22, 0.45);
-      padding: 8px;
+      border: 1px solid #314d65;
+      border-radius: 12px;
+      background: rgba(6, 14, 22, 0.52);
+      padding: 9px;
       overflow: auto;
       scrollbar-width: thin;
       scrollbar-color: #5f7385 #12202c;
@@ -185,11 +268,18 @@
       gap: 12px;
       align-items: center;
       padding: 12px;
-      border: 1px solid #8ea0af;
-      border-radius: 10px;
+      border: 1px solid #728c9f;
+      border-radius: 11px;
       margin-bottom: 10px;
-      background: rgba(20, 33, 45, 0.72);
+      background: linear-gradient(180deg, rgba(20, 33, 45, 0.8), rgba(14, 26, 37, 0.78));
       text-align: left;
+      transition: transform 140ms ease, border-color 160ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+    .lobby-item:hover {
+      transform: translateY(-1px);
+      border-color: #96bdd8;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.26);
+      background: linear-gradient(180deg, rgba(22, 37, 51, 0.87), rgba(16, 29, 40, 0.84));
     }
     .lobby-item:last-child { margin-bottom: 0; }
     .lobby-item-title {
@@ -210,9 +300,9 @@
       gap: 6px;
       margin: 8px 0 10px;
       padding: 6px 10px;
-      border: 1px solid #8ea0af;
-      border-radius: 8px;
-      background: rgba(12, 23, 33, 0.82);
+      border: 1px solid #7690a3;
+      border-radius: 9px;
+      background: rgba(12, 23, 33, 0.88);
       color: #e8f2ff;
       font-size: 12px;
       font-weight: 700;
@@ -226,8 +316,8 @@
       font-weight: 600;
     }
     .lobby-code-chip:hover {
-      border-color: #b3c0cb;
-      background: rgba(18, 31, 43, 0.95);
+      border-color: #a8cce4;
+      background: rgba(18, 33, 45, 0.96);
     }
     .lobby-join-btn {
       width: 96px;
@@ -245,22 +335,25 @@
     .lobby-form-layer {
       position: absolute;
       inset: 0;
-      background: rgba(7, 13, 20, 0.6);
+      background: rgba(7, 13, 20, 0.68);
       display: grid;
       place-items: center;
       border-radius: 14px;
       z-index: 3;
       padding: 16px;
+      backdrop-filter: blur(2px);
     }
     .lobby-form-card {
       width: min(460px, 100%);
-      background: #112131;
-      border: 1px solid #3c5e78;
-      border-radius: 12px;
-      padding: 12px;
+      background: linear-gradient(180deg, #132638, #0d1c2b);
+      border: 1px solid #40637d;
+      border-radius: 14px;
+      padding: 14px;
       display: grid;
-      gap: 8px;
+      gap: 9px;
       text-align: left;
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(227, 242, 255, 0.08);
+      animation: modalPop 190ms cubic-bezier(0.2, 0.8, 0.2, 1);
     }
     .create-lobby-card {
       width: min(720px, 100%);
@@ -275,8 +368,9 @@
     }
     .lobby-form-title {
       margin: 0;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 800;
+      letter-spacing: 0.02em;
     }
     .lobby-form-label {
       font-size: 12px;
@@ -287,7 +381,7 @@
     }
     .lobby-help {
       font-size: 12px;
-      color: #b9d8ea;
+      color: #afccdf;
       line-height: 1.35;
     }
     .lobby-error {
@@ -301,63 +395,91 @@
       gap: 8px;
       justify-content: flex-end;
     }
-    .map-choice-grid {
+    .map-choice-grid,
+    .mode-choice-grid,
+    .main-map-grid {
       display: grid;
       gap: 8px;
     }
-    .map-choice-btn {
+    .mode-choice-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .main-map-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .map-choice-btn,
+    .mode-choice-btn,
+    .main-map-btn {
       height: 38px;
-      border-radius: 8px;
-      border: 1px solid #547286;
-      background: linear-gradient(180deg, rgba(34, 56, 71, 0.96), rgba(18, 31, 42, 0.96));
+      border-radius: 9px;
+      border: 1px solid #5f7f96;
+      background: linear-gradient(180deg, rgba(34, 56, 71, 0.96), rgba(16, 28, 39, 0.96));
       color: #e8f2ff;
       font-size: 13px;
       font-weight: 700;
       text-align: left;
       padding: 0 12px;
       cursor: pointer;
-      transition: border-color 140ms ease, transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
+      transition: border-color 160ms ease, transform 150ms ease, background 160ms ease, box-shadow 170ms ease;
+      box-shadow: 0 6px 14px rgba(2, 10, 18, 0.22);
+    }
+    .mode-choice-btn {
+      text-align: center;
+      padding: 0;
     }
     .map-choice-btn:hover,
-    .map-choice-btn:focus-visible {
-      border-color: #8ccfff;
+    .map-choice-btn:focus-visible,
+    .mode-choice-btn:hover,
+    .mode-choice-btn:focus-visible,
+    .main-map-btn:hover,
+    .main-map-btn:focus-visible {
+      border-color: #98dcff;
       transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(2, 10, 18, 0.28), 0 0 0 2px rgba(92, 200, 255, 0.16);
       outline: none;
     }
-    .map-choice-btn[aria-pressed="true"] {
+    .map-choice-btn[aria-pressed="true"],
+    .mode-choice-btn[aria-pressed="true"],
+    .main-map-btn[aria-pressed="true"] {
       border-color: #9ee5ff;
       box-shadow: 0 0 0 2px rgba(92, 200, 255, 0.22);
       background: linear-gradient(180deg, rgba(58, 103, 130, 0.96), rgba(30, 68, 91, 0.96));
     }
     .map-preview-panel {
       min-height: 100%;
-      border: 1px solid #3c5e78;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(13, 26, 36, 0.96), rgba(8, 18, 27, 0.96));
-      padding: 12px;
+      border: 1px solid #3d5f78;
+      border-radius: 11px;
+      background: linear-gradient(180deg, rgba(14, 28, 40, 0.95), rgba(8, 18, 27, 0.95));
+      padding: 9px;
       display: grid;
       align-content: start;
-      gap: 10px;
+      gap: 7px;
+      box-shadow: inset 0 1px 0 rgba(222, 240, 255, 0.06), 0 8px 16px rgba(2, 10, 18, 0.2);
+    }
+    .map-preview-panel.compact {
+      margin-top: 8px;
     }
     .map-preview-title {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 800;
       color: #e8f2ff;
+      letter-spacing: 0.03em;
     }
     .map-preview-desc {
-      font-size: 12px;
-      color: #b8d3e3;
-      line-height: 1.4;
+      font-size: 11px;
+      color: #aac6d9;
+      line-height: 1.35;
     }
     .map-preview-stage {
       position: relative;
-      height: 156px;
-      border-radius: 10px;
+      height: 106px;
+      border-radius: 9px;
       border: 1px solid rgba(200, 225, 240, 0.15);
       overflow: hidden;
       opacity: 1;
       transform: translateX(0) scale(1);
-      transition: opacity 180ms ease, transform 180ms ease, background 220ms ease;
+      transition: opacity 190ms ease, transform 190ms ease, background 220ms ease, box-shadow 220ms ease;
+      box-shadow: inset 0 1px 0 rgba(235, 248, 255, 0.08), 0 12px 22px rgba(3, 10, 16, 0.28);
     }
     .map-preview-stage.preview-animating {
       opacity: 0.92;
@@ -397,15 +519,15 @@
       border-radius: 6px;
       box-shadow: 0 6px 10px rgba(0, 0, 0, 0.12);
     }
-    .preview-wall-a { left: 22px; top: 30px; }
-    .preview-wall-b { right: 22px; bottom: 28px; }
+    .preview-wall-a { left: 14px; top: 18px; }
+    .preview-wall-b { right: 14px; bottom: 16px; }
     .preview-tank {
-      width: 24px;
-      height: 18px;
+      width: 20px;
+      height: 14px;
       left: 50%;
       top: 50%;
-      margin-left: -12px;
-      margin-top: -9px;
+      margin-left: -10px;
+      margin-top: -7px;
       border-radius: 4px;
       background: linear-gradient(180deg, rgba(233, 246, 255, 0.95), rgba(164, 197, 216, 0.95));
       box-shadow: 0 0 0 1px rgba(10, 20, 30, 0.30);
@@ -413,20 +535,34 @@
     .preview-tank::after {
       content: "";
       position: absolute;
-      width: 18px;
-      height: 4px;
-      right: -12px;
-      top: 7px;
+      width: 14px;
+      height: 3px;
+      right: -9px;
+      top: 5px;
       border-radius: 3px;
       background: rgba(12, 21, 31, 0.55);
+    }
+    #mainMenuMapPreviewStage .preview-tank {
+      width: 24px;
+      height: 17px;
+      margin-left: -12px;
+      margin-top: -8.5px;
+      border-radius: 5px;
+    }
+    #mainMenuMapPreviewStage .preview-tank::after {
+      width: 18px;
+      height: 4px;
+      right: -11px;
+      top: 6.5px;
+      border-radius: 3px;
     }
     .preview-particle {
       border-radius: 999px;
       opacity: 0.55;
     }
-    .preview-particle-a { width: 4px; height: 4px; left: 28px; bottom: 24px; }
-    .preview-particle-b { width: 3px; height: 3px; right: 30px; top: 26px; }
-    .preview-particle-c { width: 5px; height: 5px; left: 124px; top: 44px; }
+    .preview-particle-a { width: 3px; height: 3px; left: 20px; bottom: 16px; }
+    .preview-particle-b { width: 2px; height: 2px; right: 20px; top: 18px; }
+    .preview-particle-c { width: 4px; height: 4px; left: 86px; top: 34px; }
     .map-preview-stage[data-map="desert"] .preview-particle { background: rgba(244, 214, 161, 0.62); }
     .map-preview-stage[data-map="grass"] .preview-particle { background: rgba(146, 212, 123, 0.46); }
     .map-preview-stage[data-map="winter"] .preview-particle { background: rgba(250, 253, 255, 0.75); }
@@ -435,33 +571,64 @@
         width: min(520px, 100%);
         grid-template-columns: 1fr;
       }
+      .mode-choice-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
       .map-preview-panel {
         order: -1;
       }
       .map-preview-stage {
-        height: 124px;
+        height: 94px;
       }
     }
     .secondary-btn {
       height: 36px;
-      border: 1px solid #6f8ba0;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #3a5568, #253947);
+      border: 1px solid #6f8da2;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #3a566a, #233846);
       color: #e8f2ff;
       font-size: 13px;
       font-weight: 700;
       padding: 0 12px;
       cursor: pointer;
+      transition: transform 140ms ease, box-shadow 170ms ease, border-color 170ms ease, filter 170ms ease;
+      box-shadow: 0 8px 16px rgba(4, 12, 20, 0.22);
+    }
+    .secondary-btn:hover,
+    .secondary-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: #9fc3dd;
+      box-shadow: 0 12px 20px rgba(4, 12, 20, 0.28), 0 0 0 2px rgba(132, 173, 201, 0.15);
+      outline: none;
+    }
+    .secondary-btn:active {
+      transform: translateY(0);
+      filter: brightness(0.98);
     }
     .main-action-btn {
       height: 42px;
-      border: 1px solid #5cc8ff;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #52bdf3, #2f95c8);
+      border: 1px solid #67ceff;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #56c4fb, #2b90c1);
       color: #e8f2ff;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: transform 140ms ease, box-shadow 180ms ease, border-color 180ms ease, filter 160ms ease;
+      box-shadow: 0 10px 20px rgba(5, 16, 24, 0.26), inset 0 1px 0 rgba(235, 247, 255, 0.26);
+    }
+    .main-action-btn:hover,
+    .main-action-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: #9ce5ff;
+      box-shadow: 0 14px 24px rgba(4, 16, 25, 0.32), 0 0 0 2px rgba(92, 200, 255, 0.2);
+      outline: none;
+      filter: saturate(1.05);
+    }
+    .main-action-btn:active {
+      transform: translateY(0);
+      filter: brightness(0.97);
     }
     .main-action-btn:disabled {
       opacity: 0.62;
@@ -470,24 +637,39 @@
     }
     .main-form {
       text-align: left;
-      margin-bottom: 12px;
+      margin-bottom: 0;
     }
     .map-select {
       width: 100%;
       height: 40px;
-      border-radius: 8px;
-      border: 1px solid #4f7088;
-      background: #0e1c28;
+      border-radius: 10px;
+      border: 1px solid #496b85;
+      background: linear-gradient(180deg, #0f1f2d, #0c1a26);
       color: var(--text);
-      padding: 8px 10px;
+      padding: 8px 11px;
       font-size: 14px;
       outline: none;
+      transition: border-color 160ms ease, box-shadow 180ms ease, transform 140ms ease, background 170ms ease;
+      box-shadow: inset 0 1px 0 rgba(223, 241, 255, 0.05);
+    }
+    .map-select:focus {
+      border-color: #8cd5ff;
+      box-shadow: inset 0 1px 0 rgba(223, 241, 255, 0.08), 0 0 0 2px rgba(92, 200, 255, 0.2), 0 8px 16px rgba(6, 14, 22, 0.28);
+      transform: translateY(-1px);
+      background: linear-gradient(180deg, #122536, #0d1d2a);
     }
     .main-meta {
       min-height: 20px;
       font-size: 12px;
-      color: #b9d8ea;
-      margin-bottom: 10px;
+      color: #9fc0d6;
+      margin-bottom: 0;
+      text-align: left;
+      letter-spacing: 0.02em;
+    }
+    .menu-help-btn {
+      width: 100%;
+      height: 36px;
+      margin-bottom: 0;
     }
     .app {
       width: min(1080px, 100%);
@@ -519,20 +701,29 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin-bottom: 8px;
-      opacity: 0.9;
+      margin-bottom: 9px;
+      opacity: 0.94;
+      color: #c6deed;
     }
     .nick-field { position: relative; margin-bottom: 12px; }
     .nick-input {
       width: 100%;
       height: 44px;
-      border-radius: 8px;
-      border: 1px solid #4f7088;
-      background: #0e1c28;
+      border-radius: 10px;
+      border: 1px solid #4a6d86;
+      background: linear-gradient(180deg, #0f1f2d, #0c1925);
       color: var(--text);
       padding: 10px 12px;
       font-size: 16px;
       outline: none;
+      transition: border-color 160ms ease, box-shadow 180ms ease, transform 140ms ease, background 170ms ease;
+      box-shadow: inset 0 1px 0 rgba(223, 241, 255, 0.05);
+    }
+    .nick-input:focus {
+      border-color: #8cd6ff;
+      box-shadow: inset 0 1px 0 rgba(223, 241, 255, 0.08), 0 0 0 2px rgba(92, 200, 255, 0.2), 0 10px 18px rgba(6, 14, 22, 0.3);
+      transform: translateY(-1px);
+      background: linear-gradient(180deg, #112536, #0d1d2a);
     }
     .nick-input::placeholder { color: transparent; }
     .nick-prompt {
@@ -567,21 +758,36 @@
     .camo-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 8px;
       width: 100%;
     }
     .camo-btn {
       width: 100%;
       aspect-ratio: 1 / 1;
-      border-radius: 7px;
-      border: 1px solid #4f7088;
+      border-radius: 9px;
+      border: 1px solid #56758e;
       cursor: pointer;
       position: relative;
       padding: 0;
       background: #111;
+      transition: transform 140ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      box-shadow: 0 6px 14px rgba(4, 11, 18, 0.24);
     }
-    .camo-btn[aria-pressed="true"] { border-color: #9ee5ff; box-shadow: 0 0 0 2px rgba(92, 200, 255, 0.25); }
+    .camo-btn:hover,
+    .camo-btn:focus-visible {
+      transform: translateY(-1px) scale(1.01);
+      border-color: #93d8ff;
+      box-shadow: 0 10px 18px rgba(5, 12, 20, 0.3), 0 0 0 2px rgba(92, 200, 255, 0.14);
+      outline: none;
+    }
+    .camo-btn:active {
+      transform: translateY(0) scale(1);
+    }
+    .camo-btn[aria-pressed="true"] {
+      border-color: #9ee5ff;
+      box-shadow: 0 0 0 2px rgba(92, 200, 255, 0.28), 0 12px 20px rgba(4, 13, 22, 0.32);
+    }
     .camo-btn::after {
       content: "";
       position: absolute;
@@ -590,58 +796,243 @@
       background: var(--pattern);
       opacity: 0.95;
     }
+    .camo-preview-panel {
+      margin-top: 0;
+      border: 1px solid #3d6079;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(13, 26, 36, 0.97), rgba(8, 18, 27, 0.97));
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      box-shadow: inset 0 1px 0 rgba(224, 240, 255, 0.06);
+    }
+    .camo-preview-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .camo-preview-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #e8f2ff;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .camo-preview-hint {
+      font-size: 11px;
+      color: #9fb6c7;
+    }
+    .camo-preview-stage {
+      position: relative;
+      height: 76px;
+      border-radius: 10px;
+      border: 1px solid rgba(200, 225, 240, 0.16);
+      overflow: hidden;
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      transition: opacity 190ms ease, transform 190ms ease, background 220ms ease, box-shadow 220ms ease;
+      background:
+        radial-gradient(circle at 22% 28%, rgba(89, 130, 158, 0.24) 0 18%, transparent 18%),
+        radial-gradient(circle at 78% 70%, rgba(42, 71, 92, 0.24) 0 20%, transparent 20%),
+        linear-gradient(135deg, #213648, #152736);
+      box-shadow: inset 0 1px 0 rgba(234, 247, 255, 0.07), 0 10px 20px rgba(3, 9, 16, 0.28);
+    }
+    .camo-preview-stage.preview-animating {
+      opacity: 0.92;
+      transform: translateX(4px) scale(0.985);
+    }
+    .camo-preview-tank {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 78px;
+      height: 44px;
+      transform: translate(-50%, -50%) rotate(-8deg);
+      border-radius: 8px;
+      background: var(--preview-pattern, repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px));
+      border: 1px solid rgba(20, 34, 45, 0.6);
+      box-shadow: 0 0 0 1px rgba(220, 240, 255, 0.16), 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .camo-preview-turret {
+      position: absolute;
+      left: 23px;
+      top: 10px;
+      width: 32px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--preview-pattern, repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px));
+      border: 1px solid rgba(16, 28, 39, 0.56);
+      box-shadow: inset 0 -1px 0 rgba(240, 250, 255, 0.16);
+    }
+    .camo-preview-barrel {
+      position: absolute;
+      right: -22px;
+      top: 18px;
+      width: 30px;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(16, 28, 38, 0.72);
+      box-shadow: 0 0 0 1px rgba(222, 239, 252, 0.14);
+    }
 
     .wrap {
       width: 100%;
-      background: color-mix(in srgb, #162635 92%, black);
-      border: 1px solid #2f4b62;
-      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(18, 35, 50, 0.96), rgba(8, 18, 27, 0.98)),
+        linear-gradient(135deg, rgba(112, 195, 255, 0.05), transparent 42%);
+      border: 1px solid #35566f;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(230, 245, 255, 0.07);
     }
     .top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      padding: 10px 14px;
+      padding: 11px 14px;
       font-size: 14px;
       border-bottom: 1px solid #2f4b62;
+      background: linear-gradient(180deg, rgba(20, 38, 53, 0.78), rgba(13, 26, 37, 0.74));
     }
-    .hint { opacity: 0.9; }
+    #status {
+      color: #d9edfb;
+      font-weight: 700;
+      text-shadow: 0 0 12px rgba(92, 200, 255, 0.12);
+      letter-spacing: 0.02em;
+    }
+    .tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      background: rgba(4, 10, 16, 0.64);
+      backdrop-filter: blur(2px);
+      padding: 18px;
+    }
+    .tutorial-card {
+      width: min(360px, 100%);
+      border: 1px solid #4f6f87;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(17, 33, 46, 0.96), rgba(9, 19, 28, 0.96));
+      box-shadow: 0 22px 38px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(225, 241, 255, 0.08);
+      padding: 16px 16px 14px;
+      text-align: center;
+    }
+    .tutorial-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #edf7ff;
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
+    }
+    .tutorial-line {
+      font-size: 14px;
+      color: #d2e8f8;
+      line-height: 1.4;
+      margin: 4px 0;
+    }
+    .tutorial-foot {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #9eb7c9;
+      letter-spacing: 0.02em;
+    }
     .back-btn {
       height: 30px;
       padding: 0 10px;
-      border: 1px solid #5cc8ff;
-      border-radius: 7px;
-      background: linear-gradient(180deg, #52bdf3, #2f95c8);
+      border: 1px solid #67ceff;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #54c3fa, #2d92c2);
       color: #e8f2ff;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      transition: transform 140ms ease, box-shadow 170ms ease, border-color 170ms ease, filter 160ms ease;
+      box-shadow: 0 8px 16px rgba(4, 12, 20, 0.24);
+    }
+    .back-btn:hover,
+    .back-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: #a4e8ff;
+      box-shadow: 0 12px 20px rgba(4, 12, 20, 0.3), 0 0 0 2px rgba(92, 200, 255, 0.18);
+      outline: none;
+    }
+    .back-btn:active {
+      transform: translateY(0);
+      filter: brightness(0.97);
     }
     .cancel-btn {
       height: 30px;
       padding: 0 10px;
-      border: 1px solid #7aa4c0;
-      border-radius: 7px;
-      background: linear-gradient(180deg, #3c6884, #27485e);
+      border: 1px solid #779bb4;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #3b6784, #25465c);
       color: #e8f2ff;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      transition: transform 140ms ease, box-shadow 170ms ease, border-color 170ms ease;
+      box-shadow: 0 8px 16px rgba(4, 12, 20, 0.24);
+    }
+    .cancel-btn:hover,
+    .cancel-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: #99bdd6;
+      box-shadow: 0 12px 20px rgba(4, 12, 20, 0.3), 0 0 0 2px rgba(144, 183, 210, 0.15);
+      outline: none;
+    }
+    .cancel-btn:active {
+      transform: translateY(0);
     }
     canvas {
       width: 100%;
       aspect-ratio: 16 / 9;
       display: block;
       background: linear-gradient(#23374a, #1f3142);
+      border-top: 1px solid rgba(136, 179, 206, 0.22);
       cursor: none;
     }
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 980px) {
+      .menu-layout {
+        gap: 18px;
+      }
+      .menu-left {
+        width: min(350px, 52vw);
+      }
+      .menu-right {
+        width: min(280px, 40vw);
+      }
+    }
+    @media (max-width: 760px) {
+      .main-card {
+        padding: 20px 16px 16px;
+        border-radius: 14px;
+      }
+      .lobbies-window {
+        width: min(94vw, 860px);
+        height: min(82vh, 560px);
+        min-width: 0;
+        min-height: 0;
+        padding: 12px;
+      }
+      .lobbies-actions {
+        grid-template-columns: 1fr;
+      }
+      .lobby-join-btn {
+        width: 100%;
+      }
+      .top {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
     }
   </style>
 </head>
@@ -649,46 +1040,70 @@
   <section id="mainMenu" class="main-screen">
     <div class="main-card">
       <h1 class="main-title">Crypto WW3</h1>
-      <div class="main-form">
-        <label class="nick-label" for="nickname">Nickname</label>
-        <div class="nick-field">
-          <input id="nickname" class="nick-input" type="text" maxlength="18" placeholder="Enter nickname" />
-          <div class="nick-prompt">Enter nickname<span class="cursor">|</span></div>
+      <div class="menu-layout">
+        <div class="menu-left">
+          <div class="main-form">
+            <label class="nick-label" for="nickname">Nickname</label>
+            <div class="nick-field">
+              <input id="nickname" class="nick-input" type="text" maxlength="18" placeholder="Enter nickname" />
+              <div class="nick-prompt">Enter nickname<span class="cursor">|</span></div>
+            </div>
+          </div>
+          <div class="main-actions">
+            <button id="menuPlayAiBtn" class="main-action-btn" type="button">Play vs AI</button>
+            <button id="menuPlayOnlineRandomBtn" class="main-action-btn" type="button">Play Online 1v1 (Random)</button>
+            <button id="menuOpenLobbiesBtn" class="main-action-btn" type="button">Lobbies</button>
+          </div>
+          <div id="modeMeta" class="main-meta"></div>
+          <button id="menuHowToPlayBtn" class="secondary-btn menu-help-btn" type="button">How to play</button>
+          <div class="main-form">
+            <label class="camo-title">Map Theme</label>
+            <div id="mainMenuMapChoices" class="main-map-grid">
+              <button class="main-map-btn" type="button" data-map="grass" aria-pressed="true">Green Biome</button>
+              <button class="main-map-btn" type="button" data-map="desert" aria-pressed="false">Desert</button>
+              <button class="main-map-btn" type="button" data-map="winter" aria-pressed="false">Winter</button>
+            </div>
+            <div id="mainMenuMapPreviewPanel" class="map-preview-panel compact">
+              <div id="mainMenuMapPreviewTitle" class="map-preview-title">Green Biome</div>
+              <div id="mainMenuMapPreviewStage" class="map-preview-stage" data-map="grass">
+                <div class="preview-wall preview-wall-a"></div>
+                <div class="preview-wall preview-wall-b"></div>
+                <div class="preview-tank"></div>
+                <div class="preview-particle preview-particle-a"></div>
+                <div class="preview-particle preview-particle-b"></div>
+                <div class="preview-particle preview-particle-c"></div>
+              </div>
+              <div id="mainMenuMapPreviewDesc" class="map-preview-desc">Classic green terrain with soft grass patches and clean visibility.</div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="main-actions">
-        <button id="menuPlayAiBtn" class="main-action-btn" type="button">Play vs AI</button>
-        <button id="menuPlayOnlineRandomBtn" class="main-action-btn" type="button">Play Online 1v1 (Random)</button>
-        <button id="menuOpenLobbiesBtn" class="main-action-btn" type="button">Lobbies</button>
-      </div>
-      <div id="modeMeta" class="main-meta"></div>
-      <div class="main-form">
-        <label class="camo-title" for="mapSelect">Map Theme</label>
-        <select id="mapSelect" class="map-select">
-          <option value="grass" selected>Green Biome</option>
-          <option value="desert">Desert</option>
-          <option value="winter">Winter</option>
-        </select>
-      </div>
-      <div class="main-form">
-        <label class="camo-title" for="arenaSizeSelect">Arena Size (Temporary)</label>
-        <select id="arenaSizeSelect" class="map-select">
-          <option value="standard" selected>Standard</option>
-          <option value="large">Large (3v3)</option>
-          <option value="xl">XL (4v4)</option>
-        </select>
-      </div>
-      <div class="main-form">
-        <div class="camo-title">Tank Camo</div>
-        <div class="camo-grid" id="camoGrid">
-          <button class="camo-btn" data-camo="classic" aria-pressed="true" style="--pattern: repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px);"></button>
-          <button class="camo-btn" data-camo="obsidian" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #1c232b 0 8px, #9e8553 8px 16px, #2f3740 16px 24px);"></button>
-          <button class="camo-btn" data-camo="arctic" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #d4e2ec 0 8px, #6d8293 8px 16px, #f6fafc 16px 24px);"></button>
-          <button class="camo-btn" data-camo="royal" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #17406d 0 8px, #66b8ff 8px 16px, #102844 16px 24px);"></button>
-          <button class="camo-btn" data-camo="crimson" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #612426 0 8px, #e08973 8px 16px, #2b1011 16px 24px);"></button>
-          <button class="camo-btn" data-camo="emerald" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #155747 0 8px, #8ad3a9 8px 16px, #0b3228 16px 24px);"></button>
-          <button class="camo-btn" data-camo="violet" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #3d2b70 0 8px, #cc9bff 8px 16px, #1f1536 16px 24px);"></button>
-          <button class="camo-btn" data-camo="sunset" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #7a4311 0 8px, #ffc870 8px 16px, #3b220c 16px 24px);"></button>
+        <div class="menu-right">
+          <div class="main-form">
+            <div class="camo-title">Tank Camo</div>
+            <div class="camo-grid" id="camoGrid">
+              <button class="camo-btn" data-camo="classic" aria-pressed="true" style="--pattern: repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px);"></button>
+              <button class="camo-btn" data-camo="obsidian" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #1c232b 0 8px, #9e8553 8px 16px, #2f3740 16px 24px);"></button>
+              <button class="camo-btn" data-camo="arctic" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #d4e2ec 0 8px, #6d8293 8px 16px, #f6fafc 16px 24px);"></button>
+              <button class="camo-btn" data-camo="royal" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #17406d 0 8px, #66b8ff 8px 16px, #102844 16px 24px);"></button>
+              <button class="camo-btn" data-camo="crimson" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #612426 0 8px, #e08973 8px 16px, #2b1011 16px 24px);"></button>
+              <button class="camo-btn" data-camo="emerald" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #155747 0 8px, #8ad3a9 8px 16px, #0b3228 16px 24px);"></button>
+              <button class="camo-btn" data-camo="violet" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #3d2b70 0 8px, #cc9bff 8px 16px, #1f1536 16px 24px);"></button>
+              <button class="camo-btn" data-camo="sunset" aria-pressed="false" style="--pattern: repeating-linear-gradient(135deg, #7a4311 0 8px, #ffc870 8px 16px, #3b220c 16px 24px);"></button>
+            </div>
+            <div id="camoPreviewPanel" class="camo-preview-panel">
+              <div class="camo-preview-head">
+                <div id="camoPreviewTitle" class="camo-preview-title">Classic</div>
+                <div class="camo-preview-hint">Hover to preview</div>
+              </div>
+              <div id="camoPreviewStage" class="camo-preview-stage">
+                <div class="camo-preview-tank">
+                  <div class="camo-preview-turret"></div>
+                  <div class="camo-preview-barrel"></div>
+                </div>
+              </div>
+              <div id="camoPreviewDesc" class="map-preview-desc">Hover any camo swatch to preview your tank look.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -718,19 +1133,14 @@
             <label class="lobby-form-label" for="createLobbyPasswordInput">Password (optional)</label>
             <input id="createLobbyPasswordInput" class="lobby-input" type="password" maxlength="24" placeholder="Enter password (optional)" />
             <div class="lobby-help">Password is optional. Use it only if you want to make the lobby private.</div>
-            <label class="lobby-form-label" for="createLobbyModeInput">Game Mode</label>
-            <select id="createLobbyModeInput" class="lobby-input">
-              <option value="1v1" selected>1v1</option>
-              <option value="2v2">2v2</option>
-              <option value="3v3">3v3</option>
-              <option value="4v4">4v4</option>
-            </select>
-            <label class="lobby-form-label" for="createLobbyArenaSizeInput">Arena Size</label>
-            <select id="createLobbyArenaSizeInput" class="lobby-input">
-              <option value="standard" selected>Standard</option>
-              <option value="large">Large (3v3)</option>
-              <option value="xl">XL (4v4)</option>
-            </select>
+            <label class="lobby-form-label">Game Mode</label>
+            <input id="createLobbyModeInput" type="hidden" value="1v1" />
+            <div id="createLobbyModeChoices" class="mode-choice-grid">
+              <button class="mode-choice-btn" type="button" data-mode="1v1" aria-pressed="true">1v1</button>
+              <button class="mode-choice-btn" type="button" data-mode="2v2" aria-pressed="false">2v2</button>
+              <button class="mode-choice-btn" type="button" data-mode="3v3" aria-pressed="false">3v3</button>
+              <button class="mode-choice-btn" type="button" data-mode="4v4" aria-pressed="false">4v4</button>
+            </div>
             <label class="lobby-form-label">Map</label>
             <div id="createLobbyMapChoices" class="map-choice-grid">
               <button class="map-choice-btn" type="button" data-map="desert" aria-pressed="false">Desert</button>
@@ -742,7 +1152,7 @@
               <button id="createLobbySubmitBtn" class="main-action-btn" type="button" style="height:36px;width:112px;">Create</button>
             </div>
           </div>
-          <div id="createLobbyPreviewPanel" class="map-preview-panel">
+          <div id="createLobbyPreviewPanel" class="map-preview-panel compact">
             <div id="createLobbyPreviewTitle" class="map-preview-title">Green Biome</div>
             <div id="createLobbyPreviewStage" class="map-preview-stage" data-map="grass">
               <div class="preview-wall preview-wall-a"></div>
@@ -776,11 +1186,19 @@
       <div class="top">
         <div><strong>Light Tanks</strong> - AI / Online</div>
         <div id="status">Press R to start</div>
-        <div class="hint">WASD - move, Mouse - aim, LMB/Space - shoot, R - restart (AI)</div>
         <button id="cancelSearchBtn" class="cancel-btn hidden" type="button">Cancel Search</button>
         <button id="backToMenuBtn" class="back-btn" type="button">Main Menu</button>
       </div>
       <canvas id="game" width="960" height="540" tabindex="0"></canvas>
+    </div>
+  </div>
+  <div id="tutorialOverlay" class="tutorial-overlay hidden" role="dialog" aria-modal="true" aria-label="How to play">
+    <div class="tutorial-card">
+      <div class="tutorial-title">How to play</div>
+      <div class="tutorial-line">WASD — Move</div>
+      <div class="tutorial-line">Mouse — Aim</div>
+      <div class="tutorial-line">Click — Shoot</div>
+      <div class="tutorial-foot">Press any key or click to continue</div>
     </div>
   </div>
 
@@ -793,10 +1211,12 @@
     const mainMenuEl = document.getElementById("mainMenu");
     const gameAppEl = document.getElementById("gameApp");
     const backToMenuBtn = document.getElementById("backToMenuBtn");
+    const musicToggleBtn = document.getElementById("musicToggleBtn");
     const cancelSearchBtn = document.getElementById("cancelSearchBtn");
     const menuPlayAiBtn = document.getElementById("menuPlayAiBtn");
     const menuPlayOnlineRandomBtn = document.getElementById("menuPlayOnlineRandomBtn");
     const menuOpenLobbiesBtn = document.getElementById("menuOpenLobbiesBtn");
+    const menuHowToPlayBtn = document.getElementById("menuHowToPlayBtn");
     const menuCreateLobbyBtn = document.getElementById("menuCreateLobbyBtn");
     const menuJoinLobbyBtn = document.getElementById("menuJoinLobbyBtn");
     const menuJoinLobbyInput = document.getElementById("menuJoinLobbyInput");
@@ -811,7 +1231,8 @@
     const createLobbyNameErrorEl = document.getElementById("createLobbyNameError");
     const createLobbyPasswordInput = document.getElementById("createLobbyPasswordInput");
     const createLobbyModeInput = document.getElementById("createLobbyModeInput");
-    const createLobbyArenaSizeInput = document.getElementById("createLobbyArenaSizeInput");
+    const createLobbyModeChoices = document.getElementById("createLobbyModeChoices");
+    const createLobbyModeButtons = Array.from(document.querySelectorAll(".mode-choice-btn"));
     const createLobbyMapChoices = document.getElementById("createLobbyMapChoices");
     const createLobbyMapButtons = Array.from(document.querySelectorAll(".map-choice-btn"));
     const createLobbyPreviewTitle = document.getElementById("createLobbyPreviewTitle");
@@ -825,10 +1246,17 @@
     const joinPasswordCancelBtn = document.getElementById("joinPasswordCancelBtn");
     const joinPasswordSubmitBtn = document.getElementById("joinPasswordSubmitBtn");
     const nicknameInput = document.getElementById("nickname");
-    const mapSelect = document.getElementById("mapSelect");
-    const arenaSizeSelect = document.getElementById("arenaSizeSelect");
+    const mainMenuMapChoices = document.getElementById("mainMenuMapChoices");
+    const mainMenuMapButtons = Array.from(document.querySelectorAll(".main-map-btn"));
+    const mainMenuMapPreviewTitle = document.getElementById("mainMenuMapPreviewTitle");
+    const mainMenuMapPreviewStage = document.getElementById("mainMenuMapPreviewStage");
+    const mainMenuMapPreviewDesc = document.getElementById("mainMenuMapPreviewDesc");
     const camoGrid = document.getElementById("camoGrid");
     const camoButtons = Array.from(document.querySelectorAll(".camo-btn"));
+    const camoPreviewTitle = document.getElementById("camoPreviewTitle");
+    const camoPreviewStage = document.getElementById("camoPreviewStage");
+    const camoPreviewDesc = document.getElementById("camoPreviewDesc");
+    const tutorialOverlayEl = document.getElementById("tutorialOverlay");
 
     const world = { w: canvas.width, h: canvas.height };
     const keys = new Set();
@@ -849,6 +1277,9 @@
     let lastSentInputAt = 0;
     let shootQueued = false;
     let onlineShootSoundCd = 0;
+    let hitSoundCd = 0;
+    let explosionSoundCd = 0;
+    let ricochetSoundCd = 0;
     const ONLINE_SERVER_URL = "wss://tank-server-q9td.onrender.com";
     let reconnectAfterClose = false;
     let appScreen = "menu";
@@ -865,14 +1296,24 @@
     let pendingCreatedLobbyMode = "";
     let pendingCreatedLobbyMaxPlayers = 0;
     let pendingCreatedLobbyMapId = "";
-    let pendingCreatedLobbyArenaSizeId = "standard";
+    let selectedMainMenuMapId = "grass";
+    let hoveredMainMenuMapId = "";
+    let selectedCreateLobbyMode = "1v1";
     let selectedCreateLobbyMapId = "grass";
     let hoveredCreateLobbyMapId = "";
+    let hoveredCamoId = "";
     let audioCtx = null;
     let currentMusicTrack = null;
     let currentMusicMode = "none";
     let desiredMusicMode = "menu";
     let audioUnlocked = false;
+    let musicEnabled = true;
+    let tutorialOverlayVisible = false;
+    let tutorialHintUntil = 0;
+    let tutorialHintsActive = false;
+
+    const TUTORIAL_STORAGE_KEY = "crypto_ww3_tutorial_seen_v1";
+    let tutorialSeen = false;
 
     const CAMOS = {
       classic: { body: "#4f7f45", stripe: "#c2ab73", turret: "#365a32", barrel: "#1b2a18" },
@@ -883,6 +1324,16 @@
       emerald: { body: "#155747", stripe: "#8ad3a9", turret: "#0b3228", barrel: "#061d16" },
       violet: { body: "#3d2b70", stripe: "#cc9bff", turret: "#1f1536", barrel: "#130d22" },
       sunset: { body: "#7a4311", stripe: "#ffc870", turret: "#3b220c", barrel: "#231406" }
+    };
+    const CAMO_LABELS = {
+      classic: "Classic",
+      obsidian: "Obsidian",
+      arctic: "Arctic",
+      royal: "Royal",
+      crimson: "Crimson",
+      emerald: "Emerald",
+      violet: "Violet",
+      sunset: "Sunset"
     };
     const ENEMY_CAMO = { body: "#7b3d43", stripe: "#ff9da2", turret: "#3a1b1f", barrel: "#261116" };
     const maxForwardSpeed = 190;
@@ -914,11 +1365,6 @@
       "2v2": { w: 960, h: 540 },
       "3v3": { w: 1100, h: 620 },
       "4v4": { w: 1240, h: 700 }
-    };
-    const ARENA_SIZE_PRESETS = {
-      standard: null,
-      large: MODE_MAP_SIZE["3v3"],
-      xl: MODE_MAP_SIZE["4v4"]
     };
     const MAP_THEMES = {
       grass: {
@@ -952,11 +1398,6 @@
       desert: "Warm sand, dune lines, and dry open space with a clear desert tone.",
       grass: "Classic green terrain with soft grass patches and clean visibility.",
       winter: "Cold snowfield with icy highlights, pale light, and crisp winter contrast."
-    };
-    const ARENA_SIZE_LABELS = {
-      standard: "Standard",
-      large: "Large",
-      xl: "XL"
     };
 
     function createSeededRandom(seed) {
@@ -1001,22 +1442,22 @@
 
     let MAP_DECORATIONS = {};
 
-    function getLargeModeProfile(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
-      if (modeId === "4v4" || arenaSizeId === "xl") return "4v4";
-      if (modeId === "3v3" || arenaSizeId === "large") return "3v3";
+    function getLargeModeProfile(modeId = currentArenaMode) {
+      if (modeId === "4v4") return "4v4";
+      if (modeId === "3v3") return "3v3";
       return "small";
     }
-    function isLargeTeamMode(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
-      return getLargeModeProfile(modeId, arenaSizeId) !== "small";
+    function isLargeTeamMode(modeId = currentArenaMode) {
+      return getLargeModeProfile(modeId) !== "small";
     }
-    function getModeTankScale(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
-      const profile = getLargeModeProfile(modeId, arenaSizeId);
+    function getModeTankScale(modeId = currentArenaMode) {
+      const profile = getLargeModeProfile(modeId);
       if (profile === "4v4") return 1.18;
       if (profile === "3v3") return 1.12;
       return 1;
     }
-    function getModeBulletRadius(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
-      const profile = getLargeModeProfile(modeId, arenaSizeId);
+    function getModeBulletRadius(modeId = currentArenaMode) {
+      const profile = getLargeModeProfile(modeId);
       if (profile === "4v4") return 5.2;
       if (profile === "3v3") return 4.7;
       return 4;
@@ -1160,6 +1601,12 @@
     let currentArenaMode = "1v1";
     let currentArenaSizeId = "standard";
     let trackMarks = [];
+    let impactEffects = [];
+    let muzzleEffects = [];
+    let smokeEffects = [];
+    let deathEffects = [];
+    let screenShakeTime = 0;
+    let screenShakeStrength = 0;
     let airdrops = [];
     let dropWaveIndex = 0;
     let matchElapsed = 0;
@@ -1167,13 +1614,16 @@
     const trackFadeTime = 7.5;
     const maxTrackMarks = 260;
 
-    function normalizeArenaSizeId(arenaSizeId) {
-      return Object.prototype.hasOwnProperty.call(ARENA_SIZE_PRESETS, arenaSizeId) ? arenaSizeId : "standard";
+    function normalizeArenaSizeId(modeId = currentArenaMode) {
+      const nextMode = MODE_MAP_SIZE[modeId] ? modeId : "1v1";
+      if (nextMode === "3v3") return "large";
+      if (nextMode === "4v4") return "xl";
+      return "standard";
     }
 
-    function getArenaSize(modeId = currentArenaMode, arenaSizeId = currentArenaSizeId) {
-      const override = ARENA_SIZE_PRESETS[normalizeArenaSizeId(arenaSizeId)];
-      return override || MODE_MAP_SIZE[modeId] || MODE_MAP_SIZE["1v1"];
+    function getArenaSize(modeId = currentArenaMode) {
+      const nextMode = MODE_MAP_SIZE[modeId] ? modeId : "1v1";
+      return MODE_MAP_SIZE[nextMode] || MODE_MAP_SIZE["1v1"];
     }
 
     function rebuildMapDecorations() {
@@ -1229,12 +1679,12 @@
       trackEmitters.clear();
     }
 
-    function applyArenaSize(modeId = "1v1", arenaSizeId = "standard", explicitWidth = 0, explicitHeight = 0) {
+    function applyArenaSize(modeId = "1v1", explicitWidth = 0, explicitHeight = 0) {
       const nextMode = MODE_MAP_SIZE[modeId] ? modeId : "1v1";
-      const nextArenaSizeId = normalizeArenaSizeId(arenaSizeId);
+      const nextArenaSizeId = normalizeArenaSizeId(nextMode);
       const size = explicitWidth > 0 && explicitHeight > 0
         ? { w: explicitWidth, h: explicitHeight }
-        : getArenaSize(nextMode, nextArenaSizeId);
+        : getArenaSize(nextMode);
       const decorationsReady = !!(MAP_DECORATIONS.grass && MAP_DECORATIONS.desert && MAP_DECORATIONS.winter);
       if (currentArenaMode === nextMode && currentArenaSizeId === nextArenaSizeId && world.w === size.w && world.h === size.h && decorationsReady) return;
       currentArenaMode = nextMode;
@@ -1260,9 +1710,10 @@
     }
 
     function resetAiRound() {
-      currentMap = mapSelect?.value || currentMap || "grass";
-      applyArenaSize("1v1", arenaSizeSelect?.value || "standard");
+      currentMap = selectedMainMenuMapId || currentMap || "grass";
+      applyArenaSize("1v1");
       resetAmbientParticles(currentMap);
+      resetCombatEffects();
       player = createTank(Math.max(120, world.w * 0.13), world.h / 2, CAMOS[selectedCamoId], 0);
       enemy = createTank(world.w - Math.max(120, world.w * 0.13), world.h / 2, ENEMY_CAMO, Math.PI);
       bullets = [];
@@ -1510,6 +1961,138 @@
       };
     }
 
+    function playHitSound() {
+      if (!audioUnlocked) return;
+      ensureAudioContext();
+      const now = audioCtx.currentTime;
+      const output = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      const oscA = audioCtx.createOscillator();
+      const oscB = audioCtx.createOscillator();
+
+      output.gain.setValueAtTime(0.0001, now);
+      output.gain.linearRampToValueAtTime(0.028, now + 0.008);
+      output.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(930, now);
+      filter.frequency.exponentialRampToValueAtTime(520, now + 0.12);
+      filter.Q.value = 0.55;
+
+      oscA.type = "triangle";
+      oscB.type = "sine";
+      oscA.frequency.setValueAtTime(720, now);
+      oscA.frequency.exponentialRampToValueAtTime(360, now + 0.12);
+      oscB.frequency.setValueAtTime(410, now);
+      oscB.frequency.exponentialRampToValueAtTime(240, now + 0.11);
+
+      oscA.connect(filter);
+      oscB.connect(filter);
+      filter.connect(output);
+      output.connect(audioCtx.destination);
+
+      oscA.start(now);
+      oscB.start(now);
+      oscA.stop(now + 0.15);
+      oscB.stop(now + 0.15);
+      oscA.onended = () => {
+        try { oscA.disconnect(); } catch {}
+        try { oscB.disconnect(); } catch {}
+        try { filter.disconnect(); } catch {}
+        try { output.disconnect(); } catch {}
+      };
+    }
+
+    function playExplosionSound() {
+      if (!audioUnlocked) return;
+      ensureAudioContext();
+      const now = audioCtx.currentTime;
+      const output = audioCtx.createGain();
+      const low = audioCtx.createBiquadFilter();
+      const high = audioCtx.createBiquadFilter();
+      const osc = audioCtx.createOscillator();
+      const noise = audioCtx.createBufferSource();
+      const noiseGain = audioCtx.createGain();
+      const buffer = audioCtx.createBuffer(1, Math.max(1, Math.floor(audioCtx.sampleRate * 0.2)), audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+
+      output.gain.setValueAtTime(0.0001, now);
+      output.gain.linearRampToValueAtTime(0.055, now + 0.018);
+      output.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+      low.type = "lowpass";
+      low.frequency.setValueAtTime(480, now);
+      low.frequency.exponentialRampToValueAtTime(200, now + 0.22);
+      low.Q.value = 0.5;
+
+      high.type = "highpass";
+      high.frequency.setValueAtTime(70, now);
+      high.Q.value = 0.5;
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.24);
+
+      noise.buffer = buffer;
+      noiseGain.gain.setValueAtTime(0.0001, now);
+      noiseGain.gain.linearRampToValueAtTime(0.03, now + 0.015);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+
+      osc.connect(low);
+      noise.connect(noiseGain);
+      noiseGain.connect(low);
+      low.connect(high);
+      high.connect(output);
+      output.connect(audioCtx.destination);
+
+      osc.start(now);
+      noise.start(now);
+      osc.stop(now + 0.3);
+      noise.stop(now + 0.3);
+      osc.onended = () => {
+        try { osc.disconnect(); } catch {}
+        try { noise.disconnect(); } catch {}
+        try { noiseGain.disconnect(); } catch {}
+        try { low.disconnect(); } catch {}
+        try { high.disconnect(); } catch {}
+        try { output.disconnect(); } catch {}
+      };
+    }
+
+    function playRicochetSound() {
+      if (!audioUnlocked) return;
+      ensureAudioContext();
+      const now = audioCtx.currentTime;
+      const output = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      const osc = audioCtx.createOscillator();
+
+      output.gain.setValueAtTime(0.0001, now);
+      output.gain.linearRampToValueAtTime(0.02, now + 0.004);
+      output.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+
+      filter.type = "highpass";
+      filter.frequency.setValueAtTime(980, now);
+      filter.Q.value = 0.7;
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(640, now + 0.08);
+
+      osc.connect(filter);
+      filter.connect(output);
+      output.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.1);
+      osc.onended = () => {
+        try { osc.disconnect(); } catch {}
+        try { filter.disconnect(); } catch {}
+        try { output.disconnect(); } catch {}
+      };
+    }
+
     function fadeOutAndStop(track, duration = 0.7) {
       if (!track || !audioCtx) return;
       const now = audioCtx.currentTime;
@@ -1532,6 +2115,7 @@
 
     function playMenuMusic() {
       desiredMusicMode = "menu";
+      if (!musicEnabled) return;
       if (!audioUnlocked) return;
       if (currentMusicMode === "menu") return;
       if (currentMusicTrack) fadeOutAndStop(currentMusicTrack, 0.8);
@@ -1541,6 +2125,7 @@
 
     function playGameMusic() {
       desiredMusicMode = "game";
+      if (!musicEnabled) return;
       if (!audioUnlocked) return;
       if (currentMusicMode === "game") return;
       if (currentMusicTrack) fadeOutAndStop(currentMusicTrack, 0.55);
@@ -1557,7 +2142,24 @@
       currentMusicMode = "none";
     }
 
+    function updateMusicToggleUi() {
+      if (!musicToggleBtn) return;
+      musicToggleBtn.textContent = musicEnabled ? "Music: On" : "Music: Off";
+      musicToggleBtn.setAttribute("aria-pressed", String(!musicEnabled));
+    }
+
+    function toggleMusic() {
+      musicEnabled = !musicEnabled;
+      if (!musicEnabled) stopMusic();
+      else syncMusicWithScreen();
+      updateMusicToggleUi();
+    }
+
     function syncMusicWithScreen() {
+      if (!musicEnabled) {
+        stopMusic();
+        return;
+      }
       if (appScreen === "game") playGameMusic();
       else playMenuMusic();
     }
@@ -1582,9 +2184,10 @@
       dropWaveIndex = 0;
       gameOver = false;
       winner = "";
+      resetCombatEffects();
       resetAiRound();
       gameStarted = true;
-      statusEl.textContent = "Battle in progress";
+      statusEl.textContent = "";
     }
     function enterWaitingState() {
       gameStarted = false;
@@ -1592,6 +2195,7 @@
       winner = "";
       bullets = [];
       airdrops = [];
+      resetCombatEffects();
       matchElapsed = 0;
       dropWaveIndex = 0;
       currentRound = 1;
@@ -1637,7 +2241,10 @@
       tank.fireCd = 0.45;
       const fireAngle = tank.turretAngle ?? tank.angle;
       const muzzle = Math.max(24, tank.w * 0.64);
-      bullets.push({ x: tank.x + Math.cos(fireAngle) * muzzle, y: tank.y + Math.sin(fireAngle) * muzzle, vx: Math.cos(fireAngle) * 380, vy: Math.sin(fireAngle) * 380, r: getModeBulletRadius(), owner });
+      const shotX = tank.x + Math.cos(fireAngle) * muzzle;
+      const shotY = tank.y + Math.sin(fireAngle) * muzzle;
+      bullets.push({ x: shotX, y: shotY, vx: Math.cos(fireAngle) * 380, vy: Math.sin(fireAngle) * 380, r: getModeBulletRadius(), owner });
+      addMuzzleEffect(shotX, shotY, fireAngle);
       tank.driveSpeed -= recoilStrength;
       playShootSound();
     }
@@ -1647,7 +2254,7 @@
       roundTransitionTimer = 1.05;
       roundResult = side;
       roundWinners.push(side);
-      statusEl.textContent = side === "player" ? "Round won" : side === "enemy" ? "Round lost" : "Round draw";
+      statusEl.textContent = "";
     }
 
     function finishAiMatch() {
@@ -1656,7 +2263,7 @@
       winner = playerWins === enemyWins ? "Match draw" : playerWins > enemyWins ? "You win match!" : "AI wins match";
       gameOver = true;
       gameStarted = false;
-      statusEl.textContent = `${winner} Press R to restart`;
+      statusEl.textContent = "";
     }
 
     function resolveAiTimerRound() {
@@ -1669,11 +2276,25 @@
       if (tank.hasArmor) {
         tank.hasArmor = false;
         tank.armorPop = 0.22;
+        addImpactEffect(tank.x, tank.y, "armor");
+        triggerScreenShake(1.4, 0.08);
         playArmorBreakSound();
         return;
       }
       tank.hp -= 1;
+      addImpactEffect(tank.x, tank.y, "hit");
+      triggerScreenShake(1.8, 0.09);
+      if (hitSoundCd <= 0) {
+        playHitSound();
+        hitSoundCd = 0.05;
+      }
       if (tank.hp <= 0) {
+        addDeathEffect(tank.x, tank.y);
+        triggerScreenShake(3.2, 0.16);
+        if (explosionSoundCd <= 0) {
+          playExplosionSound();
+          explosionSoundCd = 0.14;
+        }
         finishAiRound(by === "player" ? "player" : "enemy");
       }
     }
@@ -1822,6 +2443,11 @@
           const wall = walls[w];
           if (b.x > wall.x && b.x < wall.x + wall.w && b.y > wall.y && b.y < wall.y + wall.h) {
             wall.hp -= 1;
+            addImpactEffect(b.x, b.y, "hit");
+            if (ricochetSoundCd <= 0) {
+              playRicochetSound();
+              ricochetSoundCd = 0.04;
+            }
             if (wall.hp <= 0) walls.splice(w, 1);
             bullets.splice(i, 1);
             hitWall = true;
@@ -1960,10 +2586,11 @@
       ctx.textAlign = "start";
       ctx.textBaseline = "alphabetic";
     }
-    function drawTankHpBar(tank, hp) {
+    function drawTankHpBar(tank, hp, isEnemy = false) {
       if (hp <= 0) return;
       const maxHp = 3;
       const live = Math.max(0, Math.min(maxHp, hp | 0));
+      const liveFill = isEnemy ? "#e25555" : "#39d26b";
       const w = 39;
       const h = 8;
       const x = tank.x - w / 2;
@@ -1977,7 +2604,7 @@
 
       for (let i = 0; i < maxHp; i++) {
         const sx = x + 1 + i * (segW + gap);
-        ctx.fillStyle = i < live ? "#39d26b" : "#0a0a0a";
+        ctx.fillStyle = i < live ? liveFill : "#0a0a0a";
         ctx.fillRect(sx, y + 1, segW, h - 2);
       }
 
@@ -2455,6 +3082,215 @@
       }
     }
 
+    function resetCombatEffects() {
+      impactEffects = [];
+      muzzleEffects = [];
+      smokeEffects = [];
+      deathEffects = [];
+      screenShakeTime = 0;
+      screenShakeStrength = 0;
+    }
+
+    function addImpactEffect(x, y, tint = "hit") {
+      const color = tint === "armor" ? "rgba(120, 214, 255, 0.95)" : "rgba(255, 216, 134, 0.95)";
+      const particles = [];
+      for (let i = 0; i < 6; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const speed = randomBetween(45, 125);
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(ang) * speed,
+          vy: Math.sin(ang) * speed,
+          life: randomBetween(0.11, 0.22),
+          maxLife: randomBetween(0.11, 0.22),
+          size: randomBetween(1.5, 3.1),
+          color
+        });
+      }
+      impactEffects.push({ x, y, life: 0.18, maxLife: 0.18, color, particles });
+      if (impactEffects.length > 30) impactEffects.splice(0, impactEffects.length - 30);
+    }
+
+    function addMuzzleEffect(x, y, angle) {
+      muzzleEffects.push({
+        x,
+        y,
+        angle,
+        life: 0.1,
+        maxLife: 0.1,
+        size: randomBetween(9, 12)
+      });
+      if (muzzleEffects.length > 32) muzzleEffects.splice(0, muzzleEffects.length - 32);
+      for (let i = 0; i < 2; i++) {
+        smokeEffects.push({
+          x: x + Math.cos(angle) * randomBetween(2, 6),
+          y: y + Math.sin(angle) * randomBetween(2, 6),
+          vx: Math.cos(angle) * randomBetween(8, 22) + randomBetween(-9, 9),
+          vy: Math.sin(angle) * randomBetween(8, 22) + randomBetween(-9, 9),
+          life: randomBetween(0.22, 0.35),
+          maxLife: randomBetween(0.22, 0.35),
+          size: randomBetween(2.8, 4.4)
+        });
+      }
+      if (smokeEffects.length > 60) smokeEffects.splice(0, smokeEffects.length - 60);
+    }
+
+    function addDeathEffect(x, y) {
+      const particles = [];
+      for (let i = 0; i < 14; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const speed = randomBetween(65, 180);
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(ang) * speed,
+          vy: Math.sin(ang) * speed,
+          life: randomBetween(0.22, 0.44),
+          maxLife: randomBetween(0.22, 0.44),
+          size: randomBetween(2.2, 4.6),
+          color: Math.random() < 0.5 ? "rgba(255, 170, 98, 0.9)" : "rgba(255, 228, 160, 0.9)"
+        });
+      }
+      deathEffects.push({
+        x,
+        y,
+        life: 0.42,
+        maxLife: 0.42,
+        ringRadius: randomBetween(15, 20),
+        particles
+      });
+      if (deathEffects.length > 12) deathEffects.splice(0, deathEffects.length - 12);
+    }
+
+    function triggerScreenShake(strength = 1.5, duration = 0.08) {
+      screenShakeTime = Math.max(screenShakeTime, duration);
+      screenShakeStrength = Math.max(screenShakeStrength, strength);
+    }
+
+    function getScreenShakeOffset() {
+      if (screenShakeTime <= 0 || screenShakeStrength <= 0.01) return { x: 0, y: 0 };
+      const intensity = Math.min(1, screenShakeTime / 0.16);
+      const amp = screenShakeStrength * intensity;
+      return { x: randomBetween(-amp, amp), y: randomBetween(-amp, amp) };
+    }
+
+    function updateCombatEffects(dt) {
+      screenShakeTime = Math.max(0, screenShakeTime - dt);
+      if (screenShakeTime <= 0) screenShakeStrength = 0;
+      else screenShakeStrength *= Math.exp(-8 * dt);
+      hitSoundCd = Math.max(0, hitSoundCd - dt);
+      explosionSoundCd = Math.max(0, explosionSoundCd - dt);
+      ricochetSoundCd = Math.max(0, ricochetSoundCd - dt);
+
+      for (let i = impactEffects.length - 1; i >= 0; i--) {
+        const fx = impactEffects[i];
+        fx.life -= dt;
+        for (let p = fx.particles.length - 1; p >= 0; p--) {
+          const part = fx.particles[p];
+          part.life -= dt;
+          part.x += part.vx * dt;
+          part.y += part.vy * dt;
+          part.vx *= Math.exp(-6 * dt);
+          part.vy *= Math.exp(-6 * dt);
+          if (part.life <= 0) fx.particles.splice(p, 1);
+        }
+        if (fx.life <= 0 && fx.particles.length === 0) impactEffects.splice(i, 1);
+      }
+
+      for (let i = muzzleEffects.length - 1; i >= 0; i--) {
+        muzzleEffects[i].life -= dt;
+        if (muzzleEffects[i].life <= 0) muzzleEffects.splice(i, 1);
+      }
+
+      for (let i = smokeEffects.length - 1; i >= 0; i--) {
+        const s = smokeEffects[i];
+        s.life -= dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.vx *= Math.exp(-4 * dt);
+        s.vy *= Math.exp(-4 * dt);
+        if (s.life <= 0) smokeEffects.splice(i, 1);
+      }
+
+      for (let i = deathEffects.length - 1; i >= 0; i--) {
+        const fx = deathEffects[i];
+        fx.life -= dt;
+        for (let p = fx.particles.length - 1; p >= 0; p--) {
+          const part = fx.particles[p];
+          part.life -= dt;
+          part.x += part.vx * dt;
+          part.y += part.vy * dt;
+          part.vx *= Math.exp(-4.8 * dt);
+          part.vy *= Math.exp(-4.8 * dt);
+          if (part.life <= 0) fx.particles.splice(p, 1);
+        }
+        if (fx.life <= 0 && fx.particles.length === 0) deathEffects.splice(i, 1);
+      }
+    }
+
+    function drawCombatEffects() {
+      for (const smoke of smokeEffects) {
+        const alpha = Math.max(0, smoke.life / smoke.maxLife) * 0.32;
+        ctx.fillStyle = `rgba(180, 196, 210, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(smoke.x, smoke.y, smoke.size + (1 - smoke.life / smoke.maxLife) * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (const muzzle of muzzleEffects) {
+        const t = Math.max(0, muzzle.life / muzzle.maxLife);
+        const len = muzzle.size * (0.9 + t * 0.8);
+        ctx.save();
+        ctx.translate(muzzle.x, muzzle.y);
+        ctx.rotate(muzzle.angle);
+        ctx.fillStyle = `rgba(255, 220, 140, ${0.26 + t * 0.46})`;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(len, -len * 0.32);
+        ctx.lineTo(len, len * 0.32);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      for (const fx of impactEffects) {
+        const t = Math.max(0, fx.life / fx.maxLife);
+        ctx.fillStyle = fx.color.replace("0.95", (0.12 + t * 0.38).toFixed(3));
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, 3 + (1 - t) * 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        for (const part of fx.particles) {
+          const pa = Math.max(0, part.life / part.maxLife);
+          ctx.fillStyle = part.color.replace("0.95", (pa * 0.85).toFixed(3));
+          ctx.beginPath();
+          ctx.arc(part.x, part.y, part.size * Math.max(0.35, pa), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      for (const fx of deathEffects) {
+        const t = Math.max(0, fx.life / fx.maxLife);
+        const radius = fx.ringRadius + (1 - t) * 18;
+        ctx.strokeStyle = `rgba(255, 185, 112, ${t * 0.7})`;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(255, 138, 90, ${t * 0.2})`;
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, radius * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        for (const part of fx.particles) {
+          const pa = Math.max(0, part.life / part.maxLife);
+          ctx.fillStyle = part.color.replace("0.9", (pa * 0.82).toFixed(3));
+          ctx.beginPath();
+          ctx.arc(part.x, part.y, part.size * Math.max(0.4, pa), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
     function drawTrackMarks() {
       for (const mark of trackMarks) {
         const fade = Math.max(0, mark.life / trackFadeTime);
@@ -2634,7 +3470,11 @@
     function render() {
       const activeMapId = mode === "online" ? (onlineState?.mapId || currentMap || "grass") : currentMap;
       currentMap = activeMapId;
+      let tutorialHintTank = null;
       ctx.clearRect(0, 0, world.w, world.h);
+      const shake = getScreenShakeOffset();
+      ctx.save();
+      if (shake.x || shake.y) ctx.translate(shake.x, shake.y);
       drawMapBackground(activeMapId);
       drawAmbientParticles();
       drawTrackMarks();
@@ -2646,37 +3486,44 @@
         drawWalls(onlineState.walls);
         drawBullets(onlineState.bullets, onlinePlayers);
         for (const tank of onlinePlayers) {
+          const hp = Number(tank?.hp);
+          if (Number.isFinite(hp) && hp <= 0) continue;
           const camo = CAMOS[tank?.camoId] || (tank?.team === "red" ? ENEMY_CAMO : CAMOS.classic);
           drawTank({ ...tank, camo });
         }
+        drawCombatEffects();
         for (const tank of onlinePlayers) {
+          const hp = Number(tank?.hp);
+          if (Number.isFinite(hp) && hp <= 0) continue;
           const fallback = tank?.team === "red" ? "RED" : "BLUE";
+          const isEnemyTank = myTeam
+            ? tank?.team !== myTeam
+            : (myId ? tank?.id !== myId : tank?.team === "red");
           drawTankNickname(tank, formatNickname(tank?.nickname, fallback));
-          drawTankHpBar(tank, tank?.hp ?? 0);
+          drawTankHpBar(tank, tank?.hp ?? 0, isEnemyTank);
         }
-        const blueHp = onlinePlayers.filter((tank) => tank?.team === "blue").reduce((sum, tank) => sum + Math.max(0, tank.hp || 0), 0);
-        const redHp = onlinePlayers.filter((tank) => tank?.team === "red").reduce((sum, tank) => sum + Math.max(0, tank.hp || 0), 0);
-        ctx.fillStyle = "#dbefff";
-        ctx.font = "16px Segoe UI";
-        ctx.fillText(`Blue HP: ${blueHp}`, 16, 24);
-        ctx.fillText(`Red HP: ${redHp}`, world.w - 96, 24);
+        tutorialHintTank = onlinePlayers.find((tank) => tank?.id === myId && Number(tank?.hp || 0) > 0) || null;
       } else {
         drawAirdrops(airdrops);
         drawLightCover(lightCover);
         drawWalls(walls);
         drawBullets(bullets);
-        drawTank(player);
-        drawTank(enemy);
-        drawTankNickname(player, formatNickname(nicknameInput.value, "PLAYER"));
-        drawTankHpBar(player, player.hp);
-        drawTankNickname(enemy, formatNickname("AI BOT", "AI BOT"));
-        drawTankHpBar(enemy, enemy.hp);
-        ctx.fillStyle = "#dbefff";
-        ctx.font = "16px Segoe UI";
-        ctx.fillText(`Your HP: ${player.hp}`, 16, 24);
-        ctx.fillText(`AI HP: ${enemy.hp}`, world.w - 96, 24);
+        if (player.hp > 0) drawTank(player);
+        if (enemy.hp > 0) drawTank(enemy);
+        drawCombatEffects();
+        if (player.hp > 0) {
+          drawTankNickname(player, formatNickname(nicknameInput.value, "PLAYER"));
+          drawTankHpBar(player, player.hp, false);
+        }
+        if (enemy.hp > 0) {
+          drawTankNickname(enemy, formatNickname("AI BOT", "AI BOT"));
+          drawTankHpBar(enemy, enemy.hp, true);
+        }
+        tutorialHintTank = player?.hp > 0 ? player : null;
       }
 
+      drawInGameTutorialHints(tutorialHintTank);
+      ctx.restore();
       drawRoundHud();
 
       if (mode === "ai" && gameOver) drawOverlay(winner, "Press R to restart");
@@ -2716,6 +3563,7 @@
       winner = "";
       onlineState = null;
       airdrops = [];
+      resetCombatEffects();
       myId = null;
       myTeam = "";
       shootQueued = false;
@@ -2756,14 +3604,157 @@
       lobbiesModalEl.classList.toggle("hidden", !open);
     }
 
+    function readTutorialSeenFlag() {
+      try {
+        return localStorage.getItem(TUTORIAL_STORAGE_KEY) === "1";
+      } catch {
+        return false;
+      }
+    }
+
+    function writeTutorialSeenFlag() {
+      tutorialSeen = true;
+      try {
+        localStorage.setItem(TUTORIAL_STORAGE_KEY, "1");
+      } catch {}
+    }
+
+    function showTutorialOverlay(force = false) {
+      if (!tutorialOverlayEl) return false;
+      if (!force && tutorialSeen) return false;
+      tutorialOverlayVisible = true;
+      tutorialOverlayEl.classList.remove("hidden");
+      return true;
+    }
+
+    function hideTutorialOverlay(markSeen = true) {
+      if (!tutorialOverlayEl) return;
+      const shouldPersistSeen = markSeen && appScreen === "game";
+      const shouldStartHints = shouldPersistSeen && !tutorialSeen;
+      tutorialOverlayVisible = false;
+      tutorialOverlayEl.classList.add("hidden");
+      if (shouldPersistSeen) writeTutorialSeenFlag();
+      if (shouldStartHints) startInGameTutorialHints();
+    }
+
+    function startInGameTutorialHints(durationMs = 3800) {
+      tutorialHintsActive = true;
+      tutorialHintUntil = performance.now() + durationMs;
+    }
+
+    function drawInGameTutorialHints(tank) {
+      if (!tank || !tutorialHintsActive) return;
+      const remaining = tutorialHintUntil - performance.now();
+      if (remaining <= 0) {
+        tutorialHintsActive = false;
+        return;
+      }
+      const alpha = Math.max(0, Math.min(1, remaining < 1000 ? remaining / 1000 : 1));
+      const baseY = tank.y - tank.h / 2 - 28;
+      ctx.save();
+      ctx.globalAlpha = 0.9 * alpha;
+      ctx.font = "bold 11px 'Segoe UI', Tahoma, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(7, 15, 24, 0.72)";
+      ctx.fillRect(tank.x - 24, baseY - 9, 48, 16);
+      ctx.fillRect(tank.x + 36, tank.y - 8, 44, 16);
+      ctx.fillRect(tank.x + 20, tank.y + 16, 52, 16);
+      ctx.fillStyle = "#dbefff";
+      ctx.fillText("WASD", tank.x, baseY);
+      ctx.fillText("Aim", tank.x + 58, tank.y);
+      ctx.fillText("Shoot", tank.x + 46, tank.y + 24);
+      ctx.restore();
+    }
+
     function normalizeClientMapId(mapId) {
       return MAP_THEMES[mapId] ? mapId : "grass";
+    }
+
+    function updateMainMenuMapButtons() {
+      for (const btn of mainMenuMapButtons) {
+        btn.setAttribute("aria-pressed", String(btn.dataset.map === selectedMainMenuMapId));
+      }
+    }
+
+    function setMainMenuMapPreview(mapId) {
+      const normalized = normalizeClientMapId(mapId);
+      if (mainMenuMapPreviewTitle) mainMenuMapPreviewTitle.textContent = MAP_LABELS[normalized] || "Green Biome";
+      if (mainMenuMapPreviewDesc) mainMenuMapPreviewDesc.textContent = MAP_PREVIEW_TEXT[normalized] || MAP_PREVIEW_TEXT.grass;
+      if (mainMenuMapPreviewStage) {
+        mainMenuMapPreviewStage.classList.add("preview-animating");
+        mainMenuMapPreviewStage.dataset.map = normalized;
+        clearTimeout(mainMenuMapPreviewStage._animTimeout);
+        mainMenuMapPreviewStage._animTimeout = setTimeout(() => {
+          mainMenuMapPreviewStage.classList.remove("preview-animating");
+        }, 170);
+      }
+    }
+
+    function setMainMenuMap(mapId, previewOnly = false) {
+      const normalized = normalizeClientMapId(mapId);
+      if (!previewOnly) {
+        selectedMainMenuMapId = normalized;
+        currentMap = selectedMainMenuMapId;
+        updateMainMenuMapButtons();
+      }
+      hoveredMainMenuMapId = previewOnly ? normalized : "";
+      setMainMenuMapPreview(normalized);
+    }
+
+    function restoreMainMenuMapPreview() {
+      hoveredMainMenuMapId = "";
+      setMainMenuMapPreview(selectedMainMenuMapId);
     }
 
     function updateCreateLobbyMapButtons() {
       for (const btn of createLobbyMapButtons) {
         btn.setAttribute("aria-pressed", String(btn.dataset.map === selectedCreateLobbyMapId));
       }
+    }
+
+    function normalizeLobbyMode(modeId) {
+      return LOBBY_MODE_LIMITS[modeId] ? modeId : "1v1";
+    }
+
+    function updateCreateLobbyModeButtons() {
+      for (const btn of createLobbyModeButtons) {
+        btn.setAttribute("aria-pressed", String(btn.dataset.mode === selectedCreateLobbyMode));
+      }
+      if (createLobbyModeInput) createLobbyModeInput.value = selectedCreateLobbyMode;
+    }
+
+    function setCreateLobbyMode(modeId) {
+      selectedCreateLobbyMode = normalizeLobbyMode(modeId);
+      updateCreateLobbyModeButtons();
+    }
+
+    function normalizeClientCamoId(camoId) {
+      return CAMOS[camoId] ? camoId : "classic";
+    }
+
+    function getCamoPattern(camoId) {
+      const button = camoButtons.find((btn) => btn.dataset.camo === camoId);
+      return button?.style?.getPropertyValue("--pattern")?.trim()
+        || "repeating-linear-gradient(135deg, #4f7f45 0 8px, #c2ab73 8px 16px, #365a32 16px 24px)";
+    }
+
+    function setCamoPreview(camoId) {
+      const normalized = normalizeClientCamoId(camoId);
+      if (camoPreviewTitle) camoPreviewTitle.textContent = CAMO_LABELS[normalized] || "Classic";
+      if (camoPreviewDesc) camoPreviewDesc.textContent = `Tank camouflage preview: ${CAMO_LABELS[normalized] || "Classic"}.`;
+      if (!camoPreviewStage) return;
+      camoPreviewStage.classList.add("preview-animating");
+      camoPreviewStage.style.setProperty("--preview-pattern", getCamoPattern(normalized));
+      clearTimeout(camoPreviewStage._animTimeout);
+      camoPreviewStage._animTimeout = setTimeout(() => {
+        camoPreviewStage.classList.remove("preview-animating");
+      }, 170);
+    }
+
+    function restoreCamoPreview() {
+      hoveredCamoId = "";
+      setCamoPreview(selectedCamoId);
     }
 
     function setCreateLobbyPreview(mapId) {
@@ -2813,8 +3804,7 @@
       hideJoinPasswordForm();
       createLobbyNameInput.value = "";
       createLobbyPasswordInput.value = "";
-      createLobbyModeInput.value = "1v1";
-      createLobbyArenaSizeInput.value = "standard";
+      setCreateLobbyMode("1v1");
       selectedCreateLobbyMapId = "grass";
       hoveredCreateLobbyMapId = "";
       createLobbySubmitBtn.disabled = false;
@@ -2873,7 +3863,6 @@
       pendingCreatedLobbyMode = "";
       pendingCreatedLobbyMaxPlayers = 0;
       pendingCreatedLobbyMapId = "";
-      pendingCreatedLobbyArenaSizeId = "standard";
       if (errorMessage) setLobbyMeta(errorMessage);
     }
 
@@ -2890,8 +3879,7 @@
     function submitCreateLobby() {
       const lobbyName = (createLobbyNameInput.value || "").trim();
       const password = (createLobbyPasswordInput.value || "").trim();
-      const mode = createLobbyModeInput.value || "1v1";
-      const arenaSizeId = normalizeArenaSizeId(createLobbyArenaSizeInput.value || "standard");
+      const mode = normalizeLobbyMode(selectedCreateLobbyMode || createLobbyModeInput?.value || "1v1");
       const mapId = normalizeClientMapId(selectedCreateLobbyMapId);
       if (!lobbyName) {
         setCreateLobbyNameError("Lobby name is required.");
@@ -2903,9 +3891,8 @@
       pendingCreatedLobbyMode = mode;
       pendingCreatedLobbyMaxPlayers = LOBBY_MODE_LIMITS[mode] || 2;
       pendingCreatedLobbyMapId = mapId;
-      pendingCreatedLobbyArenaSizeId = arenaSizeId;
       startCreateLobbyRequest();
-      connectOnline({ type: "create_lobby", lobbyName, password, mode, mapId, arenaSizeId }, false);
+      connectOnline({ type: "create_lobby", lobbyName, password, mode, mapId }, false);
     }
 
     function showJoinPasswordForm(code, lobbyName = "Lobby") {
@@ -2935,7 +3922,6 @@
           password: action.password || "",
           mode: action.mode || "1v1",
           mapId: action.mapId || "grass",
-          arenaSizeId: action.arenaSizeId || "standard",
           camo
         }));
         return;
@@ -2997,9 +3983,6 @@
         const mode = document.createElement("div");
         mode.className = "lobby-item-line";
         mode.textContent = `Mode: ${currentLobbyView.mode || "1v1"}`;
-        const arena = document.createElement("div");
-        arena.className = "lobby-item-line";
-        arena.textContent = `Arena: ${ARENA_SIZE_LABELS[currentLobbyView.arenaSizeId] || "Standard"}`;
         const map = document.createElement("div");
         map.className = "lobby-item-line";
         map.textContent = `Map: ${MAP_LABELS[currentLobbyView.mapId] || "Green Biome"}`;
@@ -3020,7 +4003,7 @@
             setLobbyMeta(ok ? "Lobby code copied." : "Unable to copy lobby code.");
           });
         });
-        myLobbyCardEl.append(title, creator, mode, arena, map, players, codeChip);
+        myLobbyCardEl.append(title, creator, mode, map, players, codeChip);
 
         const actions = document.createElement("div");
         actions.style.display = "flex";
@@ -3096,9 +4079,6 @@
         const mode = document.createElement("div");
         mode.className = "lobby-item-line";
         mode.textContent = `Mode: ${lobby.mode || "1v1"}`;
-        const arena = document.createElement("div");
-        arena.className = "lobby-item-line";
-        arena.textContent = `Arena: ${ARENA_SIZE_LABELS[lobby.arenaSizeId] || "Standard"}`;
         const map = document.createElement("div");
         map.className = "lobby-item-line";
         map.textContent = `Map: ${MAP_LABELS[lobby.mapId] || "Green Biome"}`;
@@ -3109,7 +4089,7 @@
           ? names.map((name) => formatLobbyNickname(name, "PLAYER")).join(", ")
           : (lobby.joinedNickname ? formatLobbyNickname(lobby.joinedNickname, "PLAYER") : "Waiting for player...");
         members.textContent = `Players: ${lobby.playerCount}/${lobby.maxPlayers || 2} (${membersText})`;
-        info.append(name, creator, mode, arena, map, members);
+        info.append(name, creator, mode, map, members);
 
         const joinBtn = document.createElement("button");
         joinBtn.type = "button";
@@ -3145,20 +4125,69 @@
         ...lobby,
         mode: pendingCreatedLobbyMode,
         maxPlayers: pendingCreatedLobbyMaxPlayers || lobby.maxPlayers || 2,
-        mapId: pendingCreatedLobbyMapId || lobby.mapId || "grass",
-        arenaSizeId: pendingCreatedLobbyArenaSizeId || lobby.arenaSizeId || "standard"
+        mapId: pendingCreatedLobbyMapId || lobby.mapId || "grass"
       };
     }
 
-    function syncOnlineArmorBreakSound(prevState, nextState) {
+    function syncOnlineCombatEffects(prevState, nextState) {
       const prevPlayers = prevState?.players || [];
       const nextPlayers = nextState?.players || [];
+      if (!prevPlayers.length || !nextPlayers.length) return;
       const prevById = new Map(prevPlayers.map((tank) => [tank?.id, tank]));
+      const nextById = new Map(nextPlayers.map((tank) => [tank?.id, tank]));
+
       for (const nextTank of nextPlayers) {
         const prevTank = prevById.get(nextTank?.id);
         if (!prevTank || !nextTank) continue;
-        if (prevTank.hasArmor && !nextTank.hasArmor && (nextTank.armorPop || 0) > 0) {
-          playArmorBreakSound();
+
+        const prevArmor = !!prevTank.hasArmor;
+        const nextArmor = !!nextTank.hasArmor;
+        if (prevArmor && !nextArmor) {
+          addImpactEffect(nextTank.x, nextTank.y, "armor");
+          triggerScreenShake(1.4, 0.08);
+          if ((nextTank.armorPop || 0) > 0) playArmorBreakSound();
+        }
+
+        const prevHp = Number(prevTank.hp) || 0;
+        const nextHp = Number(nextTank.hp) || 0;
+        if (nextHp < prevHp) {
+          addImpactEffect(nextTank.x, nextTank.y, "hit");
+          triggerScreenShake(1.8, 0.09);
+          if (hitSoundCd <= 0) {
+            playHitSound();
+            hitSoundCd = 0.05;
+          }
+        }
+        if (prevHp > 0 && nextHp <= 0) {
+          addDeathEffect(nextTank.x, nextTank.y);
+          triggerScreenShake(3.2, 0.16);
+          if (explosionSoundCd <= 0) {
+            playExplosionSound();
+            explosionSoundCd = 0.14;
+          }
+        }
+
+        const prevCd = Number(prevTank.fireCd) || 0;
+        const nextCd = Number(nextTank.fireCd) || 0;
+        if (nextCd > 0.38 && prevCd < 0.15) {
+          const fireAngle = nextTank.turretAngle ?? nextTank.angle ?? 0;
+          const muzzle = Math.max(24, (nextTank.w || 38) * 0.64);
+          addMuzzleEffect(
+            nextTank.x + Math.cos(fireAngle) * muzzle,
+            nextTank.y + Math.sin(fireAngle) * muzzle,
+            fireAngle
+          );
+        }
+      }
+
+      for (const prevTank of prevPlayers) {
+        if (!prevTank?.id || nextById.has(prevTank.id)) continue;
+        if ((Number(prevTank.hp) || 0) <= 0) continue;
+        addDeathEffect(prevTank.x, prevTank.y);
+        triggerScreenShake(3.2, 0.16);
+        if (explosionSoundCd <= 0) {
+          playExplosionSound();
+          explosionSoundCd = 0.14;
         }
       }
     }
@@ -3249,7 +4278,6 @@
             pendingCreatedLobbyMaxPlayers = msg.maxPlayers || LOBBY_MODE_LIMITS[msg.mode] || 2;
           }
           if (msg.mapId) pendingCreatedLobbyMapId = normalizeClientMapId(msg.mapId);
-          if (msg.arenaSizeId) pendingCreatedLobbyArenaSizeId = normalizeArenaSizeId(msg.arenaSizeId);
           cancelSearchBtn.classList.remove("hidden");
           statusEl.textContent = `Lobby ${activeLobbyCode} created. Waiting...`;
           modeMetaEl.textContent = "";
@@ -3296,13 +4324,13 @@
           activeLobbyCode = "";
           renderLobbiesUi();
           cancelSearchBtn.classList.add("hidden");
-          syncOnlineArmorBreakSound(onlineState, msg.state);
+          resetCombatEffects();
           onlineState = msg.state;
-          applyArenaSize(msg.state?.mode || "1v1", msg.state?.arenaSizeId || "standard", msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
+          applyArenaSize(msg.state?.mode || "1v1", msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
           gameStarted = true;
           gameOver = false;
           winner = "";
-          statusEl.textContent = "Online battle in progress";
+          statusEl.textContent = "";
           if (myTeam === "blue") modeMetaEl.textContent = "You are Team Blue";
           else if (myTeam === "red") modeMetaEl.textContent = "You are Team Red";
           else modeMetaEl.textContent = "Online battle";
@@ -3310,9 +4338,9 @@
           if (appScreen !== "game") openGameScreen();
         }
         if (msg.type === "state") {
-          syncOnlineArmorBreakSound(onlineState, msg.state);
+          syncOnlineCombatEffects(onlineState, msg.state);
           onlineState = msg.state;
-          if (msg.state?.mode) applyArenaSize(msg.state.mode, msg.state?.arenaSizeId || "standard", msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
+          if (msg.state?.mode) applyArenaSize(msg.state.mode, msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
         }
         if (msg.type === "end") {
           gameOver = true;
@@ -3333,7 +4361,7 @@
               roundWinners: msg.roundWinners
             };
           }
-          statusEl.textContent = winner;
+          statusEl.textContent = "";
         }
       };
 
@@ -3422,6 +4450,7 @@
       mainMenuEl.classList.add("hidden");
       gameAppEl.classList.remove("hidden");
       playGameMusic();
+      if (!tutorialSeen) showTutorialOverlay();
       if (!loopStarted) {
         loopStarted = true;
         requestAnimationFrame((ts) => { lastTime = ts; tick(ts); });
@@ -3464,9 +4493,10 @@
       airdrops = [];
       renderLobbiesUi();
       setMode("ai");
-      applyArenaSize("1v1", "standard");
+      applyArenaSize("1v1");
       enterWaitingState();
       playMenuMusic();
+      hideTutorialOverlay(false);
     }
 
     function tick(ts) {
@@ -3476,6 +4506,7 @@
       const activeMapId = mode === "online" ? (onlineState?.mapId || currentMap || "grass") : currentMap;
       updateAmbientParticles(dt, activeMapId);
       updateTrackMarks(dt);
+      updateCombatEffects(dt);
       if (appScreen !== "game") {
         requestAnimationFrame(tick);
         return;
@@ -3494,7 +4525,7 @@
             if (currentRound < totalRounds) {
               currentRound += 1;
               resetAiRound();
-              statusEl.textContent = "Battle in progress";
+              statusEl.textContent = "";
             } else {
               finishAiMatch();
             }
@@ -3503,7 +4534,7 @@
         emitTrackMarksForTank(player, "ai-player", dt, activeMapId);
         emitTrackMarksForTank(enemy, "ai-enemy", dt, activeMapId);
       } else if (mode === "online") {
-        if (onlineState?.mode) applyArenaSize(onlineState.mode, onlineState?.arenaSizeId || "standard", onlineState?.mapWidth || 0, onlineState?.mapHeight || 0);
+        if (onlineState?.mode) applyArenaSize(onlineState.mode, onlineState?.mapWidth || 0, onlineState?.mapHeight || 0);
         if (gameStarted && onlineState?.players) {
           for (const tank of onlineState.players) {
             if (!tank?.id) continue;
@@ -3517,6 +4548,10 @@
     }
 
     window.addEventListener("keydown", (e) => {
+      if (tutorialOverlayVisible) {
+        hideTutorialOverlay(true);
+        return;
+      }
       if (appScreen !== "game") return;
       keys.add(e.code);
       if (e.code === "Space") {
@@ -3530,6 +4565,10 @@
     window.addEventListener("keydown", unlockAudioAndSync, { once: true });
     window.addEventListener("keyup", (e) => keys.delete(e.code));
     document.addEventListener("click", (e) => {
+      if (tutorialOverlayVisible) {
+        hideTutorialOverlay(true);
+        return;
+      }
       const target = e.target.closest("button, .camo-btn, .map-choice-btn, #lobbiesBackdrop");
       if (!target) return;
 
@@ -3543,6 +4582,14 @@
       }
       if (target.id === "menuOpenLobbiesBtn") {
         openLobbiesModal();
+        return;
+      }
+      if (target.id === "menuHowToPlayBtn") {
+        showTutorialOverlay(true);
+        return;
+      }
+      if (target.id === "musicToggleBtn") {
+        toggleMusic();
         return;
       }
       if (target.id === "lobbiesCloseBtn" || target.id === "lobbiesBackdrop") {
@@ -3597,10 +4644,19 @@
         return;
       }
       if (target.classList.contains("camo-btn")) {
-        selectedCamoId = target.dataset.camo;
+        selectedCamoId = normalizeClientCamoId(target.dataset.camo || "classic");
         for (const item of camoButtons) item.setAttribute("aria-pressed", String(item === target));
+        setCamoPreview(selectedCamoId);
         if (player) player.camo = CAMOS[selectedCamoId];
         canvas.focus();
+        return;
+      }
+      if (target.classList.contains("main-map-btn")) {
+        setMainMenuMap(target.dataset.map || "grass");
+        return;
+      }
+      if (target.classList.contains("mode-choice-btn")) {
+        setCreateLobbyMode(target.dataset.mode || "1v1");
         return;
       }
       if (target.classList.contains("map-choice-btn")) {
@@ -3617,13 +4673,9 @@
       e.preventDefault();
       submitCreateLobby();
     });
-    createLobbyModeInput?.addEventListener("keydown", (e) => {
+    createLobbyModeChoices?.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
-      e.preventDefault();
-      submitCreateLobby();
-    });
-    createLobbyArenaSizeInput?.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
+      if (!e.target.closest(".mode-choice-btn")) return;
       e.preventDefault();
       submitCreateLobby();
     });
@@ -3639,8 +4691,40 @@
       setCreateLobbyMap(btn.dataset.map || "grass", true);
     });
     createLobbyMapChoices?.addEventListener("focusout", () => restoreCreateLobbyPreview());
+    mainMenuMapChoices?.addEventListener("mouseover", (e) => {
+      const btn = e.target.closest(".main-map-btn");
+      if (!btn) return;
+      setMainMenuMap(btn.dataset.map || "grass", true);
+    });
+    mainMenuMapChoices?.addEventListener("mouseleave", () => restoreMainMenuMapPreview());
+    mainMenuMapChoices?.addEventListener("focusin", (e) => {
+      const btn = e.target.closest(".main-map-btn");
+      if (!btn) return;
+      setMainMenuMap(btn.dataset.map || "grass", true);
+    });
+    mainMenuMapChoices?.addEventListener("focusout", (e) => {
+      if (mainMenuMapChoices?.contains(e.relatedTarget)) return;
+      restoreMainMenuMapPreview();
+    });
     createLobbyNameInput?.addEventListener("input", () => {
       if ((createLobbyNameInput.value || "").trim()) setCreateLobbyNameError("");
+    });
+    camoGrid?.addEventListener("mouseover", (e) => {
+      const btn = e.target.closest(".camo-btn");
+      if (!btn) return;
+      hoveredCamoId = btn.dataset.camo || "";
+      setCamoPreview(hoveredCamoId);
+    });
+    camoGrid?.addEventListener("mouseleave", () => restoreCamoPreview());
+    camoGrid?.addEventListener("focusin", (e) => {
+      const btn = e.target.closest(".camo-btn");
+      if (!btn) return;
+      hoveredCamoId = btn.dataset.camo || "";
+      setCamoPreview(hoveredCamoId);
+    });
+    camoGrid?.addEventListener("focusout", (e) => {
+      if (camoGrid?.contains(e.relatedTarget)) return;
+      restoreCamoPreview();
     });
 
     canvas?.addEventListener("mousemove", (e) => {
@@ -3658,14 +4742,15 @@
       if (mode === "online") shootQueued = true;
       canvas.focus();
     });
-    mapSelect?.addEventListener("change", () => {
-      currentMap = mapSelect.value || "grass";
-    });
-
-    applyArenaSize("1v1", "standard");
+    updateMusicToggleUi();
+    tutorialSeen = readTutorialSeenFlag();
+    applyArenaSize("1v1");
+    setMainMenuMap(selectedMainMenuMapId);
+    setCreateLobbyMode(selectedCreateLobbyMode);
     resetAiRound();
     enterWaitingState();
     renderLobbiesUi();
+    setCamoPreview(selectedCamoId);
     setMode("ai");
     syncMusicWithScreen();
   </script>
