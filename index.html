@@ -51,6 +51,7 @@
     .main-card {
       width: min(980px, 100%);
       max-height: calc(100vh - 24px);
+      position: relative;
       background:
         linear-gradient(180deg, rgba(24, 47, 66, 0.86), rgba(10, 22, 34, 0.92)),
         linear-gradient(135deg, rgba(120, 199, 255, 0.07), transparent 44%);
@@ -61,6 +62,33 @@
       text-align: center;
       backdrop-filter: blur(7px);
       overflow: hidden;
+    }
+    .menu-credit {
+      position: absolute;
+      top: 11px;
+      right: 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #b9d0df;
+      text-decoration: none;
+      transition: transform 160ms ease, text-shadow 200ms ease;
+    }
+    .menu-credit:hover,
+    .menu-credit:focus-visible {
+      color: transparent;
+      background: linear-gradient(90deg, #7fe0ff, #9fffa7, #ffd37f, #7fe0ff);
+      background-size: 260% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: creditGlow 1.2s linear infinite;
+      text-shadow: 0 0 10px rgba(127, 224, 255, 0.42);
+      transform: translateY(-1px);
+      outline: none;
+    }
+    @keyframes creditGlow {
+      from { background-position: 0% 50%; }
+      to { background-position: 100% 50%; }
     }
     .menu-layout {
       display: flex;
@@ -1016,6 +1044,11 @@
         padding: 20px 16px 16px;
         border-radius: 14px;
       }
+      .menu-credit {
+        top: 9px;
+        right: 12px;
+        font-size: 11px;
+      }
       .lobbies-window {
         width: min(94vw, 860px);
         height: min(82vh, 560px);
@@ -1040,6 +1073,7 @@
   <section id="mainMenu" class="main-screen">
     <div class="main-card">
       <h1 class="main-title">Crypto WW3</h1>
+      <a class="menu-credit" href="https://x.com/PenguinWeb3" target="_blank" rel="noopener noreferrer">by @PenguinWeb3</a>
       <div class="menu-layout">
         <div class="menu-left">
           <div class="main-form">
@@ -4129,6 +4163,14 @@
       };
     }
 
+    function normalizeOnlineStatePayload(nextState) {
+      if (!nextState || typeof nextState !== "object") return null;
+      return {
+        ...nextState,
+        airdrops: Array.isArray(nextState.airdrops) ? nextState.airdrops : []
+      };
+    }
+
     function syncOnlineCombatEffects(prevState, nextState) {
       const prevPlayers = prevState?.players || [];
       const nextPlayers = nextState?.players || [];
@@ -4325,8 +4367,8 @@
           renderLobbiesUi();
           cancelSearchBtn.classList.add("hidden");
           resetCombatEffects();
-          onlineState = msg.state;
-          applyArenaSize(msg.state?.mode || "1v1", msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
+          onlineState = normalizeOnlineStatePayload(msg.state);
+          applyArenaSize(onlineState?.mode || "1v1", onlineState?.mapWidth || 0, onlineState?.mapHeight || 0);
           gameStarted = true;
           gameOver = false;
           winner = "";
@@ -4338,9 +4380,10 @@
           if (appScreen !== "game") openGameScreen();
         }
         if (msg.type === "state") {
-          syncOnlineCombatEffects(onlineState, msg.state);
-          onlineState = msg.state;
-          if (msg.state?.mode) applyArenaSize(msg.state.mode, msg.state?.mapWidth || 0, msg.state?.mapHeight || 0);
+          const nextOnlineState = normalizeOnlineStatePayload(msg.state);
+          syncOnlineCombatEffects(onlineState, nextOnlineState);
+          onlineState = nextOnlineState;
+          if (onlineState?.mode) applyArenaSize(onlineState.mode, onlineState?.mapWidth || 0, onlineState?.mapHeight || 0);
         }
         if (msg.type === "end") {
           gameOver = true;

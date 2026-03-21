@@ -388,8 +388,12 @@ function resetMatchState() {
 }
 
 function makePublicState() {
+  const safeAirdrops = Array.isArray(state?.airdrops)
+    ? state.airdrops.map((drop) => ({ ...drop }))
+    : [];
   return {
     ...state,
+    airdrops: safeAirdrops,
     mapId: state.mapId || currentMapId,
     mode: state.mode || currentModeId,
     arenaSizeId: state.arenaSizeId || currentArenaSizeId,
@@ -1367,7 +1371,7 @@ wss.on("connection", (ws) => {
 resetArena();
 resetMatchState();
 setInterval(() => {
-  if (!bothConnected()) return;
+  if (!arenaBusy()) return;
 
   const dt = TICK_MS / 1000;
   if (!matchState.matchEnded) {
